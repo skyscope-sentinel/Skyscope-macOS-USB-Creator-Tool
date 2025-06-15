@@ -8,6 +8,7 @@ import datetime
 import sys
 import os
 import tempfile
+import time
 
 # --- Global Constants ---
 SCRIPT_NAME_SLUG = "Skyscope_macOS_Creator"
@@ -24,10 +25,13 @@ class Utils:
     def __init__(self):
         self.script_name_slug = SCRIPT_NAME_SLUG
     def cprint(self, text, color=None, **kwargs):
+        # Basic color mapping
         if color == "red": print(f"ERROR: {text}")
         elif color == "yellow": print(f"WARNING: {text}")
         elif color == "header": print(f"\n--- {text} ---")
-        else: print(text)
+        elif color == "green": print(text) # Basic green
+        elif color == "cyan": print(text) # Basic cyan
+        else: print(text) # Default
     def head(self, text, color="green"):
         print(f"\n{'='*10} {text} {'='*10}")
 
@@ -71,7 +75,6 @@ class Downloader:
 
 # --- Catalog Manager ---
 class CatalogManager:
-    # (Content mostly unchanged - _parse_products, add_manual_product, _get_displayable_products, list_products, select_product, get_product_info)
     def __init__(self, utils_instance, downloader_instance):
         self.u = utils_instance; self.d = downloader_instance; self.catalog_data = None
         self.products = {}; self.raw_catalog_content_bytes = None
@@ -259,29 +262,2091 @@ class CatalogManager:
         return all_ok
     def get_product_info(self, product_id): return self.products.get(product_id)
 
+# --- EFI Config Manager ---
+class EFIConfigManager:
+    def __init__(self, utils_instance):
+        self.u = utils_instance
+        self.opencore_configs = {
+            "oc_sandybridge_generic": """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>#WARNING - 1</key>
+    <string>This is a generic Sandy Bridge Sample.plist</string>
+    <key>#WARNING - 2</key>
+    <string>Ensure you understand ALL settings before booting.</string>
+    <key>ACPI</key>
+    <dict>
+        <key>Add</key>
+        <array/>
+        <key>Delete</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>FadtEnableReset</key>
+            <false/>
+            <key>NormalizeHeaders</key>
+            <false/>
+            <key>RebaseRegions</key>
+            <false/>
+            <key>ResetHwSig</key>
+            <false/>
+            <key>ResetLogoStatus</key>
+            <true/>
+            <key>SyncTableIds</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>Booter</key>
+    <dict>
+        <key>MmioWhitelist</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AllowRelocationBlock</key>
+            <false/>
+            <key>AvoidRuntimeDefrag</key>
+            <true/>
+            <key>DevirtualiseMmio</key>
+            <false/>
+            <key>DisableSingleUser</key>
+            <false/>
+            <key>DisableVariableWrite</key>
+            <false/>
+            <key>DiscardHibernateMap</key>
+            <false/>
+            <key>EnableSafeModeSlide</key>
+            <true/>
+            <key>EnableWriteUnprotector</key>
+            <true/>
+            <key>ForceBooterSignature</key>
+            <false/>
+            <key>ForceExitBootServices</key>
+            <false/>
+            <key>ProtectMemoryRegions</key>
+            <false/>
+            <key>ProtectSecureBoot</key>
+            <false/>
+            <key>ProtectUefiServices</key>
+            <false/>
+            <key>ProvideCustomSlide</key>
+            <true/>
+            <key>ProvideMaxSlide</key>
+            <integer>0</integer>
+            <key>RebuildAppleMemoryMap</key>
+            <false/>
+            <key>ResizeAppleGpuBars</key>
+            <integer>-1</integer>
+            <key>SetupVirtualMap</key>
+            <true/>
+            <key>SignalAppleOS</key>
+            <false/>
+            <key>SyncRuntimePermissions</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>DeviceProperties</key>
+    <dict>
+        <key>Add</key>
+        <dict/>
+        <key>Delete</key>
+        <dict/>
+    </dict>
+    <key>Kernel</key>
+    <dict>
+        <key>Add</key>
+        <array>
+            <!-- Essential Kexts will be added by the script -->
+        </array>
+        <key>Block</key>
+        <array/>
+        <key>Emulate</key>
+        <dict>
+            <key>Cpuid1Data</key>
+            <data></data>
+            <key>Cpuid1Mask</key>
+            <data></data>
+            <key>DummyPowerManagement</key>
+            <true/>
+            <key>MaxKernel</key>
+            <string></string>
+            <key>MinKernel</key>
+            <string></string>
+        </dict>
+        <key>Force</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AppleCpuPmCfgLock</key>
+            <true/>
+            <key>AppleXcpmCfgLock</key>
+            <true/>
+            <key>AppleXcpmExtraMsrs</key>
+            <false/>
+            <key>AppleXcpmForceBoost</key>
+            <false/>
+            <key>CustomPciSerialDevice</key>
+            <false/>
+            <key>CustomSMBIOSGuid</key>
+            <false/>
+            <key>DisableIoMapper</key>
+            <true/>
+            <key>DisableLinkeditJettison</key>
+            <true/>
+            <key>DisableRtcChecksum</key>
+            <false/>
+            <key>ExtendBTFeatureFlags</key>
+            <false/>
+            <key>ExternalDiskIcons</key>
+            <false/>
+            <key>ForceAquantiaEthernet</key>
+            <false/>
+            <key>ForceSecureBootScheme</key>
+            <false/>
+            <key>IncreasePciBarSize</key>
+            <false/>
+            <key>LapicKernelPanic</key>
+            <false/>
+            <key>LegacyCommpage</key>
+            <false/>
+            <key>PanicNoKextDump</key>
+            <true/>
+            <key>PowerTimeoutKernelPanic</key>
+            <true/>
+            <key>ProvideCurrentCpuInfo</key>
+            <false/>
+            <key>SetApfsTrimTimeout</key>
+            <integer>-1</integer>
+            <key>ThirdPartyDrives</key>
+            <false/>
+            <key>XhciPortLimit</key>
+            <false/>
+        </dict>
+        <key>Scheme</key>
+        <dict>
+            <key>CustomKernel</key>
+            <false/>
+            <key>FuzzyMatch</key>
+            <true/>
+            <key>KernelArch</key>
+            <string>Auto</string>
+            <key>KernelCache</key>
+            <string>Auto</string>
+        </dict>
+    </dict>
+    <key>Misc</key>
+    <dict>
+        <key>BlessOverride</key>
+        <array/>
+        <key>Boot</key>
+        <dict>
+            <key>ConsoleAttributes</key>
+            <integer>0</integer>
+            <key>HibernateMode</key>
+            <string>None</string>
+            <key>HibernateSkipsPicker</key>
+            <false/>
+            <key>HideAuxiliary</key>
+            <false/>
+            <key>InstanceIdentifier</key>
+            <string></string>
+            <key>LauncherOption</key>
+            <string>Disabled</string>
+            <key>LauncherPath</key>
+            <string>Default</string>
+            <key>PickerAttributes</key>
+            <integer>17</integer>
+            <key>PickerAudioAssist</key>
+            <false/>
+            <key>PickerMode</key>
+            <string>Builtin</string>
+            <key>PickerVariant</key>
+            <string>Auto</string>
+            <key>PollAppleHotKeys</key>
+            <false/>
+            <key>ShowPicker</key>
+            <true/>
+            <key>TakeoffDelay</key>
+            <integer>0</integer>
+            <key>Timeout</key>
+            <integer>5</integer>
+        </dict>
+        <key>Debug</key>
+        <dict>
+            <key>AppleDebug</key>
+            <true/>
+            <key>ApplePanic</key>
+            <true/>
+            <key>DisableWatchDog</key>
+            <true/>
+            <key>DisplayDelay</key>
+            <integer>0</integer>
+            <key>DisplayLevel</key>
+            <integer>2147483650</integer>
+            <key>LogModules</key>
+            <string>*</string>
+            <key>SysReport</key>
+            <false/>
+            <key>Target</key>
+            <integer>67</integer>
+        </dict>
+        <key>Entries</key>
+        <array/>
+        <key>Security</key>
+        <dict>
+            <key>AllowSetDefault</key>
+            <true/>
+            <key>ApECID</key>
+            <integer>0</integer>
+            <key>AuthRestart</key>
+            <false/>
+            <key>BlacklistAppleUpdate</key>
+            <true/>
+            <key>DmgLoading</key>
+            <string>Signed</string>
+            <key>EnablePassword</key>
+            <false/>
+            <key>ExposeSensitiveData</key>
+            <integer>6</integer>
+            <key>HaltLevel</key>
+            <integer>2147483648</integer>
+            <key>PasswordHash</key>
+            <data></data>
+            <key>PasswordSalt</key>
+            <data></data>
+            <key>ScanPolicy</key>
+            <integer>0</integer>
+            <key>SecureBootModel</key>
+            <string>Disabled</string>
+            <key>Vault</key>
+            <string>Optional</string>
+        </dict>
+        <key>Serial</key>
+        <dict>
+            <key>Custom</key>
+            <dict>
+                <key>BaudRate</key>
+                <integer>115200</integer>
+                <key>ClockRate</key>
+                <integer>1843200</integer>
+                <key>DetectCable</key>
+                <false/>
+                <key>ExtendedTxFifoSize</key>
+                <integer>64</integer>
+                <key>FifoControl</key>
+                <integer>7</integer>
+                <key>LineControl</key>
+                <integer>3</integer>
+                <key>PciDeviceInfo</key>
+                <data>/w==</data>
+                <key>RegisterAccessWidth</key>
+                <integer>8</integer>
+                <key>RegisterBase</key>
+                <integer>1016</integer>
+                <key>RegisterStride</key>
+                <integer>1</integer>
+                <key>UseHardwareFlowControl</key>
+                <false/>
+                <key>UseMmio</key>
+                <false/>
+            </dict>
+            <key>Init</key>
+            <false/>
+            <key>Override</key>
+            <false/>
+        </dict>
+        <key>Tools</key>
+        <array/>
+    </dict>
+    <key>NVRAM</key>
+    <dict>
+        <key>Add</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <dict>
+                <key>DefaultBackgroundColor</key>
+                <data>AAAAAA==</data>
+            </dict>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <dict>
+                <key>rtc-blacklist</key>
+                <data></data>
+            </dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <dict>
+                <key>ForceDisplayRotationInEFI</key>
+                <integer>0</integer>
+                <key>SystemAudioVolume</key>
+                <data>Rg==</data>
+                <key>boot-args</key>
+                <string>-v debug=0x100 keepsyms=1</string>
+                <key>csr-active-config</key>
+                <data>AAAAAA==</data>
+                <key>prev-lang:kbd</key>
+                <data>ZW4tVVM6MA==</data>
+                <key>run-efi-updater</key>
+                <string>No</string>
+            </dict>
+        </dict>
+        <key>Delete</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <array>
+                <string>DefaultBackgroundColor</string>
+            </array>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <array>
+                <string>rtc-blacklist</string>
+            </array>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>boot-args</string>
+                <string>ForceDisplayRotationInEFI</string>
+            </array>
+        </dict>
+        <key>LegacyOverwrite</key>
+        <false/>
+        <key>LegacySchema</key>
+        <dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>EFILoginHiDPI</string>
+                <string>EFIBluetoothDelay</string>
+                <string>LocationServicesEnabled</string>
+                <string>SystemAudioVolume</string>
+                <string>SystemAudioVolumeDB</string>
+                <string>SystemAudioVolumeSaved</string>
+                <string>bluetoothActiveControllerInfo</string>
+                <string>bluetoothInternalControllerInfo</string>
+                <string>flagstate</string>
+                <string>fmm-computer-name</string>
+                <string>fmm-mobileme-token-FMM</string>
+                <string>fmm-mobileme-token-FMM-BridgeHasAccount</string>
+                <string>nvda_drv</string>
+                <string>prev-lang:kbd</string>
+            </array>
+            <key>8BE4DF61-93CA-11D2-AA0D-00E098032B8C</key>
+            <array>
+                <string>Boot0080</string>
+                <string>Boot0081</string>
+                <string>Boot0082</string>
+                <string>BootNext</string>
+                <string>BootOrder</string>
+            </array>
+        </dict>
+        <key>WriteFlash</key>
+        <true/>
+    </dict>
+    <key>PlatformInfo</key>
+    <dict>
+        <key>Automatic</key>
+        <true/>
+        <key>CustomMemory</key>
+        <false/>
+        <key>Generic</key>
+        <dict>
+            <key>AdviseFeatures</key>
+            <false/>
+            <key>MLB</key>
+            <string>C0223030040F291A8</string>
+            <key>MaxBIOSVersion</key>
+            <false/>
+            <key>ProcessorType</key>
+            <integer>0</integer>
+            <key>ROM</key>
+            <data>ESIzRFVm</data>
+            <key>SpoofVendor</key>
+            <true/>
+            <key>SystemMemoryStatus</key>
+            <string>Auto</string>
+            <key>SystemProductName</key>
+            <string>iMac12,2</string>
+            <key>SystemSerialNumber</key>
+            <string>C02HHF2DHJQ0</string>
+            <key>SystemUUID</key>
+            <string>E4D22FE2-8246-4741-BA2A-CBD9924AB3A6</string>
+        </dict>
+        <key>UpdateDataHub</key>
+        <true/>
+        <key>UpdateNVRAM</key>
+        <true/>
+        <key>UpdateSMBIOS</key>
+        <true/>
+        <key>UpdateSMBIOSMode</key>
+        <string>Create</string>
+        <key>UseRawUuidEncoding</key>
+        <false/>
+    </dict>
+    <key>UEFI</key>
+    <dict>
+        <key>APFS</key>
+        <dict>
+            <key>EnableJumpstart</key>
+            <true/>
+            <key>GlobalConnect</key>
+            <false/>
+            <key>HideVerbose</key>
+            <true/>
+            <key>JumpstartHotPlug</key>
+            <false/>
+            <key>MinDate</key>
+            <integer>-1</integer>
+            <key>MinVersion</key>
+            <integer>-1</integer>
+        </dict>
+        <key>AppleInput</key>
+        <dict>
+            <key>AppleEvent</key>
+            <string>Builtin</string>
+            <key>CustomDelays</key>
+            <false/>
+            <key>GraphicsInputMirroring</key>
+            <true/>
+            <key>KeyInitialDelay</key>
+            <integer>50</integer>
+            <key>KeySubsequentDelay</key>
+            <integer>5</integer>
+            <key>PointerSpeedDiv</key>
+            <integer>1</integer>
+            <key>PointerSpeedMul</key>
+            <integer>1</integer>
+        </dict>
+        <key>Audio</key>
+        <dict>
+            <key>AudioCodec</key>
+            <integer>0</integer>
+            <key>AudioDevice</key>
+            <string>PciRoot(0x0)/Pci(0x1b,0x0)</string>
+            <key>AudioOutMask</key>
+            <integer>1</integer>
+            <key>AudioSupport</key>
+            <false/>
+            <key>DisconnectHda</key>
+            <false/>
+            <key>MaximumGain</key>
+            <integer>-15</integer>
+            <key>MinimumAssistGain</key>
+            <integer>-30</integer>
+            <key>MinimumAudibleGain</key>
+            <integer>-55</integer>
+            <key>PlayChime</key>
+            <string>Auto</string>
+            <key>ResetTrafficClass</key>
+            <false/>
+            <key>SetupDelay</key>
+            <integer>0</integer>
+        </dict>
+        <key>ConnectDrivers</key>
+        <true/>
+        <key>Drivers</key>
+        <array>
+            <!-- Essential Drivers will be added by the script -->
+        </array>
+        <key>Input</key>
+        <dict>
+            <key>KeyFiltering</key>
+            <false/>
+            <key>KeyForgetThreshold</key>
+            <integer>5</integer>
+            <key>KeySupport</key>
+            <true/>
+            <key>KeySupportMode</key>
+            <string>Auto</string>
+            <key>KeySwap</key>
+            <false/>
+            <key>PointerSupport</key>
+            <false/>
+            <key>PointerSupportMode</key>
+            <string>ASUS</string>
+            <key>TimerResolution</key>
+            <integer>50000</integer>
+        </dict>
+        <key>Output</key>
+        <dict>
+            <key>ClearScreenOnModeSwitch</key>
+            <false/>
+            <key>ConsoleMode</key>
+            <string></string>
+            <key>DirectGopRendering</key>
+            <false/>
+            <key>ForceResolution</key>
+            <false/>
+            <key>GopPassThrough</key>
+            <string>Disabled</string>
+            <key>IgnoreTextInGraphics</key>
+            <false/>
+            <key>ProvideConsoleGop</key>
+            <true/>
+            <key>ReconnectGraphicsOnConnect</key>
+            <false/>
+            <key>ReconnectOnResChange</key>
+            <false/>
+            <key>ReplaceTabWithSpace</key>
+            <false/>
+            <key>Resolution</key>
+            <string>Max</string>
+            <key>SanitiseClearScreen</key>
+            <false/>
+            <key>TextRenderer</key>
+            <string>BuiltinGraphics</string>
+            <key>UIScale</key>
+            <integer>-1</integer>
+            <key>UgaPassThrough</key>
+            <false/>
+        </dict>
+        <key>ProtocolOverrides</key>
+        <dict>
+            <key>AppleAudio</key>
+            <false/>
+            <key>AppleBootPolicy</key>
+            <false/>
+            <key>AppleDebugLog</key>
+            <false/>
+            <key>AppleEg2Info</key>
+            <false/>
+            <key>AppleFramebufferInfo</key>
+            <false/>
+            <key>AppleImageConversion</key>
+            <false/>
+            <key>AppleImg4Verification</key>
+            <false/>
+            <key>AppleKeyMap</key>
+            <false/>
+            <key>AppleRtcRam</key>
+            <false/>
+            <key>AppleSecureBoot</key>
+            <false/>
+            <key>AppleSmcIo</key>
+            <false/>
+            <key>AppleUserInterfaceTheme</key>
+            <false/>
+            <key>DataHub</key>
+            <false/>
+            <key>DeviceProperties</key>
+            <false/>
+            <key>FirmwareVolume</key>
+            <true/>
+            <key>HashServices</key>
+            <false/>
+            <key>OSInfo</key>
+            <false/>
+            <key>UnicodeCollation</key>
+            <false/>
+        </dict>
+        <key>Quirks</key>
+        <dict>
+            <key>ActivateHpetSupport</key>
+            <false/>
+            <key>DisableSecurityPolicy</key>
+            <false/>
+            <key>EnableVectorAcceleration</key>
+            <true/>
+            <key>EnableVmx</key>
+            <false/>
+            <key>ExitBootServicesDelay</key>
+            <integer>0</integer>
+            <key>ForceOcWriteFlash</key>
+            <false/>
+            <key>ForgeUefiSupport</key>
+            <false/>
+            <key>IgnoreInvalidFlexRatio</key>
+            <false/>
+            <key>ReleaseUsbOwnership</key>
+            <false/>
+            <key>ReloadOptionRoms</key>
+            <false/>
+            <key>RequestBootVarRouting</key>
+            <true/>
+            <key>ResizeGpuBars</key>
+            <integer>-1</integer>
+            <key>TscSyncTimeout</key>
+            <integer>0</integer>
+            <key>UnblockFsConnect</key>
+            <false/>
+        </dict>
+        <key>ReservedMemory</key>
+        <array/>
+    </dict>
+</dict>
+</plist>
+""",
+            "oc_ivybridge_generic": """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>#WARNING - 1</key>
+    <string>This is a generic Ivy Bridge Sample.plist</string>
+    <key>#WARNING - 2</key>
+    <string>Ensure you understand ALL settings before booting.</string>
+    <key>ACPI</key>
+    <dict>
+        <key>Add</key>
+        <array/>
+        <key>Delete</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>FadtEnableReset</key>
+            <false/>
+            <key>NormalizeHeaders</key>
+            <false/>
+            <key>RebaseRegions</key>
+            <false/>
+            <key>ResetHwSig</key>
+            <false/>
+            <key>ResetLogoStatus</key>
+            <true/>
+            <key>SyncTableIds</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>Booter</key>
+    <dict>
+        <key>MmioWhitelist</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AllowRelocationBlock</key>
+            <false/>
+            <key>AvoidRuntimeDefrag</key>
+            <true/>
+            <key>DevirtualiseMmio</key>
+            <false/>
+            <key>DisableSingleUser</key>
+            <false/>
+            <key>DisableVariableWrite</key>
+            <false/>
+            <key>DiscardHibernateMap</key>
+            <false/>
+            <key>EnableSafeModeSlide</key>
+            <true/>
+            <key>EnableWriteUnprotector</key>
+            <true/>
+            <key>ForceBooterSignature</key>
+            <false/>
+            <key>ForceExitBootServices</key>
+            <false/>
+            <key>ProtectMemoryRegions</key>
+            <false/>
+            <key>ProtectSecureBoot</key>
+            <false/>
+            <key>ProtectUefiServices</key>
+            <false/>
+            <key>ProvideCustomSlide</key>
+            <true/>
+            <key>ProvideMaxSlide</key>
+            <integer>0</integer>
+            <key>RebuildAppleMemoryMap</key>
+            <false/>
+            <key>ResizeAppleGpuBars</key>
+            <integer>-1</integer>
+            <key>SetupVirtualMap</key>
+            <true/>
+            <key>SignalAppleOS</key>
+            <false/>
+            <key>SyncRuntimePermissions</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>DeviceProperties</key>
+    <dict>
+        <key>Add</key>
+        <dict/>
+        <key>Delete</key>
+        <dict/>
+    </dict>
+    <key>Kernel</key>
+    <dict>
+        <key>Add</key>
+        <array>
+            <!-- Essential Kexts will be added by the script -->
+        </array>
+        <key>Block</key>
+        <array/>
+        <key>Emulate</key>
+        <dict>
+            <key>Cpuid1Data</key>
+            <data></data>
+            <key>Cpuid1Mask</key>
+            <data></data>
+            <key>DummyPowerManagement</key>
+            <false/> <!-- Ivy Bridge usually has native PM -->
+            <key>MaxKernel</key>
+            <string></string>
+            <key>MinKernel</key>
+            <string></string>
+        </dict>
+        <key>Force</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AppleCpuPmCfgLock</key>
+            <true/>
+            <key>AppleXcpmCfgLock</key>
+            <true/>
+            <key>AppleXcpmExtraMsrs</key>
+            <false/>
+            <key>AppleXcpmForceBoost</key>
+            <false/>
+            <key>CustomPciSerialDevice</key>
+            <false/>
+            <key>CustomSMBIOSGuid</key>
+            <false/>
+            <key>DisableIoMapper</key>
+            <true/>
+            <key>DisableLinkeditJettison</key>
+            <true/>
+            <key>DisableRtcChecksum</key>
+            <false/>
+            <key>ExtendBTFeatureFlags</key>
+            <false/>
+            <key>ExternalDiskIcons</key>
+            <false/>
+            <key>ForceAquantiaEthernet</key>
+            <false/>
+            <key>ForceSecureBootScheme</key>
+            <false/>
+            <key>IncreasePciBarSize</key>
+            <false/>
+            <key>LapicKernelPanic</key>
+            <false/>
+            <key>LegacyCommpage</key>
+            <false/>
+            <key>PanicNoKextDump</key>
+            <true/>
+            <key>PowerTimeoutKernelPanic</key>
+            <true/>
+            <key>ProvideCurrentCpuInfo</key>
+            <false/>
+            <key>SetApfsTrimTimeout</key>
+            <integer>-1</integer>
+            <key>ThirdPartyDrives</key>
+            <false/>
+            <key>XhciPortLimit</key>
+            <false/>
+        </dict>
+        <key>Scheme</key>
+        <dict>
+            <key>CustomKernel</key>
+            <false/>
+            <key>FuzzyMatch</key>
+            <true/>
+            <key>KernelArch</key>
+            <string>Auto</string>
+            <key>KernelCache</key>
+            <string>Auto</string>
+        </dict>
+    </dict>
+    <key>Misc</key>
+    <dict>
+        <key>BlessOverride</key>
+        <array/>
+        <key>Boot</key>
+        <dict>
+            <key>ConsoleAttributes</key>
+            <integer>0</integer>
+            <key>HibernateMode</key>
+            <string>None</string>
+            <key>HibernateSkipsPicker</key>
+            <false/>
+            <key>HideAuxiliary</key>
+            <false/>
+            <key>InstanceIdentifier</key>
+            <string></string>
+            <key>LauncherOption</key>
+            <string>Disabled</string>
+            <key>LauncherPath</key>
+            <string>Default</string>
+            <key>PickerAttributes</key>
+            <integer>17</integer>
+            <key>PickerAudioAssist</key>
+            <false/>
+            <key>PickerMode</key>
+            <string>Builtin</string>
+            <key>PickerVariant</key>
+            <string>Auto</string>
+            <key>PollAppleHotKeys</key>
+            <false/>
+            <key>ShowPicker</key>
+            <true/>
+            <key>TakeoffDelay</key>
+            <integer>0</integer>
+            <key>Timeout</key>
+            <integer>5</integer>
+        </dict>
+        <key>Debug</key>
+        <dict>
+            <key>AppleDebug</key>
+            <true/>
+            <key>ApplePanic</key>
+            <true/>
+            <key>DisableWatchDog</key>
+            <true/>
+            <key>DisplayDelay</key>
+            <integer>0</integer>
+            <key>DisplayLevel</key>
+            <integer>2147483650</integer>
+            <key>LogModules</key>
+            <string>*</string>
+            <key>SysReport</key>
+            <false/>
+            <key>Target</key>
+            <integer>67</integer>
+        </dict>
+        <key>Entries</key>
+        <array/>
+        <key>Security</key>
+        <dict>
+            <key>AllowSetDefault</key>
+            <true/>
+            <key>ApECID</key>
+            <integer>0</integer>
+            <key>AuthRestart</key>
+            <false/>
+            <key>BlacklistAppleUpdate</key>
+            <true/>
+            <key>DmgLoading</key>
+            <string>Signed</string>
+            <key>EnablePassword</key>
+            <false/>
+            <key>ExposeSensitiveData</key>
+            <integer>6</integer>
+            <key>HaltLevel</key>
+            <integer>2147483648</integer>
+            <key>PasswordHash</key>
+            <data></data>
+            <key>PasswordSalt</key>
+            <data></data>
+            <key>ScanPolicy</key>
+            <integer>0</integer>
+            <key>SecureBootModel</key>
+            <string>Disabled</string>
+            <key>Vault</key>
+            <string>Optional</string>
+        </dict>
+        <key>Serial</key>
+        <dict>
+            <key>Custom</key>
+            <dict>
+                <key>BaudRate</key>
+                <integer>115200</integer>
+                <key>ClockRate</key>
+                <integer>1843200</integer>
+                <key>DetectCable</key>
+                <false/>
+                <key>ExtendedTxFifoSize</key>
+                <integer>64</integer>
+                <key>FifoControl</key>
+                <integer>7</integer>
+                <key>LineControl</key>
+                <integer>3</integer>
+                <key>PciDeviceInfo</key>
+                <data>/w==</data>
+                <key>RegisterAccessWidth</key>
+                <integer>8</integer>
+                <key>RegisterBase</key>
+                <integer>1016</integer>
+                <key>RegisterStride</key>
+                <integer>1</integer>
+                <key>UseHardwareFlowControl</key>
+                <false/>
+                <key>UseMmio</key>
+                <false/>
+            </dict>
+            <key>Init</key>
+            <false/>
+            <key>Override</key>
+            <false/>
+        </dict>
+        <key>Tools</key>
+        <array/>
+    </dict>
+    <key>NVRAM</key>
+    <dict>
+        <key>Add</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <dict>
+                <key>DefaultBackgroundColor</key>
+                <data>AAAAAA==</data>
+            </dict>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <dict>
+                <key>rtc-blacklist</key>
+                <data></data>
+            </dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <dict>
+                <key>ForceDisplayRotationInEFI</key>
+                <integer>0</integer>
+                <key>SystemAudioVolume</key>
+                <data>Rg==</data>
+                <key>boot-args</key>
+                <string>-v debug=0x100 keepsyms=1</string>
+                <key>csr-active-config</key>
+                <data>AAAAAA==</data>
+                <key>prev-lang:kbd</key>
+                <data>ZW4tVVM6MA==</data>
+                <key>run-efi-updater</key>
+                <string>No</string>
+            </dict>
+        </dict>
+        <key>Delete</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <array>
+                <string>DefaultBackgroundColor</string>
+            </array>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <array>
+                <string>rtc-blacklist</string>
+            </array>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>boot-args</string>
+                <string>ForceDisplayRotationInEFI</string>
+            </array>
+        </dict>
+        <key>LegacyOverwrite</key>
+        <false/>
+        <key>LegacySchema</key>
+        <dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>EFILoginHiDPI</string>
+                <string>EFIBluetoothDelay</string>
+                <string>LocationServicesEnabled</string>
+                <string>SystemAudioVolume</string>
+                <string>SystemAudioVolumeDB</string>
+                <string>SystemAudioVolumeSaved</string>
+                <string>bluetoothActiveControllerInfo</string>
+                <string>bluetoothInternalControllerInfo</string>
+                <string>flagstate</string>
+                <string>fmm-computer-name</string>
+                <string>fmm-mobileme-token-FMM</string>
+                <string>fmm-mobileme-token-FMM-BridgeHasAccount</string>
+                <string>nvda_drv</string>
+                <string>prev-lang:kbd</string>
+            </array>
+            <key>8BE4DF61-93CA-11D2-AA0D-00E098032B8C</key>
+            <array>
+                <string>Boot0080</string>
+                <string>Boot0081</string>
+                <string>Boot0082</string>
+                <string>BootNext</string>
+                <string>BootOrder</string>
+            </array>
+        </dict>
+        <key>WriteFlash</key>
+        <true/>
+    </dict>
+    <key>PlatformInfo</key>
+    <dict>
+        <key>Automatic</key>
+        <true/>
+        <key>CustomMemory</key>
+        <false/>
+        <key>Generic</key>
+        <dict>
+            <key>AdviseFeatures</key>
+            <false/>
+            <key>MLB</key>
+            <string>C0281234567890123</string> <!-- Change this -->
+            <key>MaxBIOSVersion</key>
+            <false/>
+            <key>ProcessorType</key>
+            <integer>0</integer>
+            <key>ROM</key>
+            <data>ESIzRFVm</data> <!-- Change this -->
+            <key>SpoofVendor</key>
+            <true/>
+            <key>SystemMemoryStatus</key>
+            <string>Auto</string>
+            <key>SystemProductName</key>
+            <string>iMac13,2</string> <!-- Common for Ivy Bridge -->
+            <key>SystemSerialNumber</key>
+            <string>C02TESTTESTTEST</string> <!-- Change this -->
+            <key>SystemUUID</key>
+            <string>GENERATED-NEW-UUID</string> <!-- Change this -->
+        </dict>
+        <key>UpdateDataHub</key>
+        <true/>
+        <key>UpdateNVRAM</key>
+        <true/>
+        <key>UpdateSMBIOS</key>
+        <true/>
+        <key>UpdateSMBIOSMode</key>
+        <string>Create</string>
+        <key>UseRawUuidEncoding</key>
+        <false/>
+    </dict>
+    <key>UEFI</key>
+    <dict>
+        <key>APFS</key>
+        <dict>
+            <key>EnableJumpstart</key>
+            <true/>
+            <key>GlobalConnect</key>
+            <false/>
+            <key>HideVerbose</key>
+            <true/>
+            <key>JumpstartHotPlug</key>
+            <false/>
+            <key>MinDate</key>
+            <integer>-1</integer>
+            <key>MinVersion</key>
+            <integer>-1</integer>
+        </dict>
+        <key>AppleInput</key>
+        <dict>
+            <key>AppleEvent</key>
+            <string>Builtin</string>
+            <key>CustomDelays</key>
+            <false/>
+            <key>GraphicsInputMirroring</key>
+            <true/>
+            <key>KeyInitialDelay</key>
+            <integer>50</integer>
+            <key>KeySubsequentDelay</key>
+            <integer>5</integer>
+            <key>PointerSpeedDiv</key>
+            <integer>1</integer>
+            <key>PointerSpeedMul</key>
+            <integer>1</integer>
+        </dict>
+        <key>Audio</key>
+        <dict>
+            <key>AudioCodec</key>
+            <integer>0</integer>
+            <key>AudioDevice</key>
+            <string>PciRoot(0x0)/Pci(0x1b,0x0)</string>
+            <key>AudioOutMask</key>
+            <integer>1</integer>
+            <key>AudioSupport</key>
+            <false/>
+            <key>DisconnectHda</key>
+            <false/>
+            <key>MaximumGain</key>
+            <integer>-15</integer>
+            <key>MinimumAssistGain</key>
+            <integer>-30</integer>
+            <key>MinimumAudibleGain</key>
+            <integer>-55</integer>
+            <key>PlayChime</key>
+            <string>Auto</string>
+            <key>ResetTrafficClass</key>
+            <false/>
+            <key>SetupDelay</key>
+            <integer>0</integer>
+        </dict>
+        <key>ConnectDrivers</key>
+        <true/>
+        <key>Drivers</key>
+        <array>
+            <!-- Essential Drivers will be added by the script -->
+        </array>
+        <key>Input</key>
+        <dict>
+            <key>KeyFiltering</key>
+            <false/>
+            <key>KeyForgetThreshold</key>
+            <integer>5</integer>
+            <key>KeySupport</key>
+            <true/>
+            <key>KeySupportMode</key>
+            <string>Auto</string>
+            <key>KeySwap</key>
+            <false/>
+            <key>PointerSupport</key>
+            <false/>
+            <key>PointerSupportMode</key>
+            <string>ASUS</string>
+            <key>TimerResolution</key>
+            <integer>50000</integer>
+        </dict>
+        <key>Output</key>
+        <dict>
+            <key>ClearScreenOnModeSwitch</key>
+            <false/>
+            <key>ConsoleMode</key>
+            <string></string>
+            <key>DirectGopRendering</key>
+            <false/>
+            <key>ForceResolution</key>
+            <false/>
+            <key>GopPassThrough</key>
+            <string>Disabled</string>
+            <key>IgnoreTextInGraphics</key>
+            <false/>
+            <key>ProvideConsoleGop</key>
+            <true/>
+            <key>ReconnectGraphicsOnConnect</key>
+            <false/>
+            <key>ReconnectOnResChange</key>
+            <false/>
+            <key>ReplaceTabWithSpace</key>
+            <false/>
+            <key>Resolution</key>
+            <string>Max</string>
+            <key>SanitiseClearScreen</key>
+            <false/>
+            <key>TextRenderer</key>
+            <string>BuiltinGraphics</string>
+            <key>UIScale</key>
+            <integer>-1</integer>
+            <key>UgaPassThrough</key>
+            <false/>
+        </dict>
+        <key>ProtocolOverrides</key>
+        <dict>
+            <key>AppleAudio</key>
+            <false/>
+            <key>AppleBootPolicy</key>
+            <false/>
+            <key>AppleDebugLog</key>
+            <false/>
+            <key>AppleEg2Info</key>
+            <false/>
+            <key>AppleFramebufferInfo</key>
+            <false/>
+            <key>AppleImageConversion</key>
+            <false/>
+            <key>AppleImg4Verification</key>
+            <false/>
+            <key>AppleKeyMap</key>
+            <false/>
+            <key>AppleRtcRam</key>
+            <false/>
+            <key>AppleSecureBoot</key>
+            <false/>
+            <key>AppleSmcIo</key>
+            <false/>
+            <key>AppleUserInterfaceTheme</key>
+            <false/>
+            <key>DataHub</key>
+            <false/>
+            <key>DeviceProperties</key>
+            <false/>
+            <key>FirmwareVolume</key>
+            <true/>
+            <key>HashServices</key>
+            <false/>
+            <key>OSInfo</key>
+            <false/>
+            <key>UnicodeCollation</key>
+            <false/>
+        </dict>
+        <key>Quirks</key>
+        <dict>
+            <key>ActivateHpetSupport</key>
+            <false/>
+            <key>DisableSecurityPolicy</key>
+            <false/>
+            <key>EnableVectorAcceleration</key>
+            <true/>
+            <key>EnableVmx</key>
+            <false/>
+            <key>ExitBootServicesDelay</key>
+            <integer>0</integer>
+            <key>ForceOcWriteFlash</key>
+            <false/>
+            <key>ForgeUefiSupport</key>
+            <false/>
+            <key>IgnoreInvalidFlexRatio</key>
+            <false/>
+            <key>ReleaseUsbOwnership</key>
+            <false/>
+            <key>ReloadOptionRoms</key>
+            <false/>
+            <key>RequestBootVarRouting</key>
+            <true/>
+            <key>ResizeGpuBars</key>
+            <integer>-1</integer>
+            <key>TscSyncTimeout</key>
+            <integer>0</integer>
+            <key>UnblockFsConnect</key>
+            <false/>
+        </dict>
+        <key>ReservedMemory</key>
+        <array/>
+    </dict>
+</dict>
+</plist>
+""",
+            "oc_haswell_generic": """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>#WARNING - 1</key>
+    <string>This is a generic Haswell Sample.plist</string>
+    <key>#WARNING - 2</key>
+    <string>Ensure you understand ALL settings before booting.</string>
+    <key>ACPI</key>
+    <dict>
+        <key>Add</key>
+        <array/>
+        <key>Delete</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>FadtEnableReset</key>
+            <false/>
+            <key>NormalizeHeaders</key>
+            <false/>
+            <key>RebaseRegions</key>
+            <false/>
+            <key>ResetHwSig</key>
+            <false/>
+            <key>ResetLogoStatus</key>
+            <true/>
+            <key>SyncTableIds</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>Booter</key>
+    <dict>
+        <key>MmioWhitelist</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AllowRelocationBlock</key>
+            <false/>
+            <key>AvoidRuntimeDefrag</key>
+            <true/>
+            <key>DevirtualiseMmio</key>
+            <true/> <!-- Haswell can benefit from this -->
+            <key>DisableSingleUser</key>
+            <false/>
+            <key>DisableVariableWrite</key>
+            <false/>
+            <key>DiscardHibernateMap</key>
+            <false/>
+            <key>EnableSafeModeSlide</key>
+            <true/>
+            <key>EnableWriteUnprotector</key>
+            <false/> <!-- Haswell usually does not need this -->
+            <key>ForceBooterSignature</key>
+            <false/>
+            <key>ForceExitBootServices</key>
+            <false/>
+            <key>ProtectMemoryRegions</key>
+            <false/>
+            <key>ProtectSecureBoot</key>
+            <false/>
+            <key>ProtectUefiServices</key>
+            <false/>
+            <key>ProvideCustomSlide</key>
+            <true/>
+            <key>ProvideMaxSlide</key>
+            <integer>0</integer>
+            <key>RebuildAppleMemoryMap</key>
+            <true/> <!-- Haswell can benefit from this -->
+            <key>ResizeAppleGpuBars</key>
+            <integer>-1</integer>
+            <key>SetupVirtualMap</key>
+            <true/>
+            <key>SignalAppleOS</key>
+            <false/>
+            <key>SyncRuntimePermissions</key>
+            <true/> <!-- Haswell can benefit from this -->
+        </dict>
+    </dict>
+    <key>DeviceProperties</key>
+    <dict>
+        <key>Add</key>
+        <dict/>
+        <key>Delete</key>
+        <dict/>
+    </dict>
+    <key>Kernel</key>
+    <dict>
+        <key>Add</key>
+        <array>
+            <!-- Essential Kexts will be added by the script -->
+        </array>
+        <key>Block</key>
+        <array/>
+        <key>Emulate</key>
+        <dict>
+            <key>Cpuid1Data</key>
+            <data></data>
+            <key>Cpuid1Mask</key>
+            <data></data>
+            <key>DummyPowerManagement</key>
+            <false/>
+            <key>MaxKernel</key>
+            <string></string>
+            <key>MinKernel</key>
+            <string></string>
+        </dict>
+        <key>Force</key>
+        <array/>
+        <key>Patch</key>
+        <array/>
+        <key>Quirks</key>
+        <dict>
+            <key>AppleCpuPmCfgLock</key>
+            <true/>
+            <key>AppleXcpmCfgLock</key>
+            <true/>
+            <key>AppleXcpmExtraMsrs</key>
+            <true/> <!-- Haswell typically needs this -->
+            <key>AppleXcpmForceBoost</key>
+            <false/>
+            <key>CustomPciSerialDevice</key>
+            <false/>
+            <key>CustomSMBIOSGuid</key>
+            <false/>
+            <key>DisableIoMapper</key>
+            <true/>
+            <key>DisableLinkeditJettison</key>
+            <true/>
+            <key>DisableRtcChecksum</key>
+            <false/>
+            <key>ExtendBTFeatureFlags</key>
+            <false/>
+            <key>ExternalDiskIcons</key>
+            <false/>
+            <key>ForceAquantiaEthernet</key>
+            <false/>
+            <key>ForceSecureBootScheme</key>
+            <false/>
+            <key>IncreasePciBarSize</key>
+            <false/>
+            <key>LapicKernelPanic</key>
+            <false/>
+            <key>LegacyCommpage</key>
+            <false/>
+            <key>PanicNoKextDump</key>
+            <true/>
+            <key>PowerTimeoutKernelPanic</key>
+            <true/>
+            <key>ProvideCurrentCpuInfo</key>
+            <false/>
+            <key>SetApfsTrimTimeout</key>
+            <integer>-1</integer>
+            <key>ThirdPartyDrives</key>
+            <false/>
+            <key>XhciPortLimit</key>
+            <false/>
+        </dict>
+        <key>Scheme</key>
+        <dict>
+            <key>CustomKernel</key>
+            <false/>
+            <key>FuzzyMatch</key>
+            <true/>
+            <key>KernelArch</key>
+            <string>Auto</string>
+            <key>KernelCache</key>
+            <string>Auto</string>
+        </dict>
+    </dict>
+    <key>Misc</key>
+    <dict>
+        <key>BlessOverride</key>
+        <array/>
+        <key>Boot</key>
+        <dict>
+            <key>ConsoleAttributes</key>
+            <integer>0</integer>
+            <key>HibernateMode</key>
+            <string>None</string>
+            <key>HibernateSkipsPicker</key>
+            <false/>
+            <key>HideAuxiliary</key>
+            <false/>
+            <key>InstanceIdentifier</key>
+            <string></string>
+            <key>LauncherOption</key>
+            <string>Disabled</string>
+            <key>LauncherPath</key>
+            <string>Default</string>
+            <key>PickerAttributes</key>
+            <integer>17</integer>
+            <key>PickerAudioAssist</key>
+            <false/>
+            <key>PickerMode</key>
+            <string>Builtin</string>
+            <key>PickerVariant</key>
+            <string>Auto</string>
+            <key>PollAppleHotKeys</key>
+            <false/>
+            <key>ShowPicker</key>
+            <true/>
+            <key>TakeoffDelay</key>
+            <integer>0</integer>
+            <key>Timeout</key>
+            <integer>5</integer>
+        </dict>
+        <key>Debug</key>
+        <dict>
+            <key>AppleDebug</key>
+            <true/>
+            <key>ApplePanic</key>
+            <true/>
+            <key>DisableWatchDog</key>
+            <true/>
+            <key>DisplayDelay</key>
+            <integer>0</integer>
+            <key>DisplayLevel</key>
+            <integer>2147483650</integer>
+            <key>LogModules</key>
+            <string>*</string>
+            <key>SysReport</key>
+            <false/>
+            <key>Target</key>
+            <integer>67</integer>
+        </dict>
+        <key>Entries</key>
+        <array/>
+        <key>Security</key>
+        <dict>
+            <key>AllowSetDefault</key>
+            <true/>
+            <key>ApECID</key>
+            <integer>0</integer>
+            <key>AuthRestart</key>
+            <false/>
+            <key>BlacklistAppleUpdate</key>
+            <true/>
+            <key>DmgLoading</key>
+            <string>Signed</string>
+            <key>EnablePassword</key>
+            <false/>
+            <key>ExposeSensitiveData</key>
+            <integer>6</integer>
+            <key>HaltLevel</key>
+            <integer>2147483648</integer>
+            <key>PasswordHash</key>
+            <data></data>
+            <key>PasswordSalt</key>
+            <data></data>
+            <key>ScanPolicy</key>
+            <integer>0</integer>
+            <key>SecureBootModel</key>
+            <string>Disabled</string>
+            <key>Vault</key>
+            <string>Optional</string>
+        </dict>
+        <key>Serial</key>
+        <dict>
+            <key>Custom</key>
+            <dict>
+                <key>BaudRate</key>
+                <integer>115200</integer>
+                <key>ClockRate</key>
+                <integer>1843200</integer>
+                <key>DetectCable</key>
+                <false/>
+                <key>ExtendedTxFifoSize</key>
+                <integer>64</integer>
+                <key>FifoControl</key>
+                <integer>7</integer>
+                <key>LineControl</key>
+                <integer>3</integer>
+                <key>PciDeviceInfo</key>
+                <data>/w==</data>
+                <key>RegisterAccessWidth</key>
+                <integer>8</integer>
+                <key>RegisterBase</key>
+                <integer>1016</integer>
+                <key>RegisterStride</key>
+                <integer>1</integer>
+                <key>UseHardwareFlowControl</key>
+                <false/>
+                <key>UseMmio</key>
+                <false/>
+            </dict>
+            <key>Init</key>
+            <false/>
+            <key>Override</key>
+            <false/>
+        </dict>
+        <key>Tools</key>
+        <array/>
+    </dict>
+    <key>NVRAM</key>
+    <dict>
+        <key>Add</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <dict>
+                <key>DefaultBackgroundColor</key>
+                <data>AAAAAA==</data>
+            </dict>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <dict>
+                <key>rtc-blacklist</key>
+                <data></data>
+            </dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <dict>
+                <key>ForceDisplayRotationInEFI</key>
+                <integer>0</integer>
+                <key>SystemAudioVolume</key>
+                <data>Rg==</data>
+                <key>boot-args</key>
+                <string>-v debug=0x100 keepsyms=1</string>
+                <key>csr-active-config</key>
+                <data>AAAAAA==</data>
+                <key>prev-lang:kbd</key>
+                <data>ZW4tVVM6MA==</data>
+                <key>run-efi-updater</key>
+                <string>No</string>
+            </dict>
+        </dict>
+        <key>Delete</key>
+        <dict>
+            <key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+            <array>
+                <string>DefaultBackgroundColor</string>
+            </array>
+            <key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+            <array>
+                <string>rtc-blacklist</string>
+            </array>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>boot-args</string>
+                <string>ForceDisplayRotationInEFI</string>
+            </array>
+        </dict>
+        <key>LegacyOverwrite</key>
+        <false/>
+        <key>LegacySchema</key>
+        <dict>
+            <key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+            <array>
+                <string>EFILoginHiDPI</string>
+                <string>EFIBluetoothDelay</string>
+                <string>LocationServicesEnabled</string>
+                <string>SystemAudioVolume</string>
+                <string>SystemAudioVolumeDB</string>
+                <string>SystemAudioVolumeSaved</string>
+                <string>bluetoothActiveControllerInfo</string>
+                <string>bluetoothInternalControllerInfo</string>
+                <string>flagstate</string>
+                <string>fmm-computer-name</string>
+                <string>fmm-mobileme-token-FMM</string>
+                <string>fmm-mobileme-token-FMM-BridgeHasAccount</string>
+                <string>nvda_drv</string>
+                <string>prev-lang:kbd</string>
+            </array>
+            <key>8BE4DF61-93CA-11D2-AA0D-00E098032B8C</key>
+            <array>
+                <string>Boot0080</string>
+                <string>Boot0081</string>
+                <string>Boot0082</string>
+                <string>BootNext</string>
+                <string>BootOrder</string>
+            </array>
+        </dict>
+        <key>WriteFlash</key>
+        <true/>
+    </dict>
+    <key>PlatformInfo</key>
+    <dict>
+        <key>Automatic</key>
+        <true/>
+        <key>CustomMemory</key>
+        <false/>
+        <key>Generic</key>
+        <dict>
+            <key>AdviseFeatures</key>
+            <false/>
+            <key>MLB</key>
+            <string>C0242030040F291A8</string> <!-- Change this -->
+            <key>MaxBIOSVersion</key>
+            <false/>
+            <key>ProcessorType</key>
+            <integer>0</integer>
+            <key>ROM</key>
+            <data>ESIzRFVm</data> <!-- Change this -->
+            <key>SpoofVendor</key>
+            <true/>
+            <key>SystemMemoryStatus</key>
+            <string>Auto</string>
+            <key>SystemProductName</key>
+            <string>iMac14,2</string> <!-- Common for Haswell -->
+            <key>SystemSerialNumber</key>
+            <string>C02TESTHASWELL0</string> <!-- Change this -->
+            <key>SystemUUID</key>
+            <string>ANOTHER-GENERATED-UUID</string> <!-- Change this -->
+        </dict>
+        <key>UpdateDataHub</key>
+        <true/>
+        <key>UpdateNVRAM</key>
+        <true/>
+        <key>UpdateSMBIOS</key>
+        <true/>
+        <key>UpdateSMBIOSMode</key>
+        <string>Create</string>
+        <key>UseRawUuidEncoding</key>
+        <false/>
+    </dict>
+    <key>UEFI</key>
+    <dict>
+        <key>APFS</key>
+        <dict>
+            <key>EnableJumpstart</key>
+            <true/>
+            <key>GlobalConnect</key>
+            <false/>
+            <key>HideVerbose</key>
+            <true/>
+            <key>JumpstartHotPlug</key>
+            <false/>
+            <key>MinDate</key>
+            <integer>-1</integer>
+            <key>MinVersion</key>
+            <integer>-1</integer>
+        </dict>
+        <key>AppleInput</key>
+        <dict>
+            <key>AppleEvent</key>
+            <string>Builtin</string>
+            <key>CustomDelays</key>
+            <false/>
+            <key>GraphicsInputMirroring</key>
+            <true/>
+            <key>KeyInitialDelay</key>
+            <integer>50</integer>
+            <key>KeySubsequentDelay</key>
+            <integer>5</integer>
+            <key>PointerSpeedDiv</key>
+            <integer>1</integer>
+            <key>PointerSpeedMul</key>
+            <integer>1</integer>
+        </dict>
+        <key>Audio</key>
+        <dict>
+            <key>AudioCodec</key>
+            <integer>0</integer>
+            <key>AudioDevice</key>
+            <string>PciRoot(0x0)/Pci(0x1b,0x0)</string>
+            <key>AudioOutMask</key>
+            <integer>1</integer>
+            <key>AudioSupport</key>
+            <false/>
+            <key>DisconnectHda</key>
+            <false/>
+            <key>MaximumGain</key>
+            <integer>-15</integer>
+            <key>MinimumAssistGain</key>
+            <integer>-30</integer>
+            <key>MinimumAudibleGain</key>
+            <integer>-55</integer>
+            <key>PlayChime</key>
+            <string>Auto</string>
+            <key>ResetTrafficClass</key>
+            <false/>
+            <key>SetupDelay</key>
+            <integer>0</integer>
+        </dict>
+        <key>ConnectDrivers</key>
+        <true/>
+        <key>Drivers</key>
+        <array>
+            <!-- Essential Drivers will be added by the script -->
+        </array>
+        <key>Input</key>
+        <dict>
+            <key>KeyFiltering</key>
+            <false/>
+            <key>KeyForgetThreshold</key>
+            <integer>5</integer>
+            <key>KeySupport</key>
+            <true/>
+            <key>KeySupportMode</key>
+            <string>Auto</string>
+            <key>KeySwap</key>
+            <false/>
+            <key>PointerSupport</key>
+            <false/>
+            <key>PointerSupportMode</key>
+            <string>ASUS</string>
+            <key>TimerResolution</key>
+            <integer>50000</integer>
+        </dict>
+        <key>Output</key>
+        <dict>
+            <key>ClearScreenOnModeSwitch</key>
+            <false/>
+            <key>ConsoleMode</key>
+            <string></string>
+            <key>DirectGopRendering</key>
+            <false/>
+            <key>ForceResolution</key>
+            <false/>
+            <key>GopPassThrough</key>
+            <string>Disabled</string>
+            <key>IgnoreTextInGraphics</key>
+            <false/>
+            <key>ProvideConsoleGop</key>
+            <true/>
+            <key>ReconnectGraphicsOnConnect</key>
+            <false/>
+            <key>ReconnectOnResChange</key>
+            <false/>
+            <key>ReplaceTabWithSpace</key>
+            <false/>
+            <key>Resolution</key>
+            <string>Max</string>
+            <key>SanitiseClearScreen</key>
+            <false/>
+            <key>TextRenderer</key>
+            <string>BuiltinGraphics</string>
+            <key>UIScale</key>
+            <integer>-1</integer>
+            <key>UgaPassThrough</key>
+            <false/>
+        </dict>
+        <key>ProtocolOverrides</key>
+        <dict>
+            <key>AppleAudio</key>
+            <false/>
+            <key>AppleBootPolicy</key>
+            <false/>
+            <key>AppleDebugLog</key>
+            <false/>
+            <key>AppleEg2Info</key>
+            <false/>
+            <key>AppleFramebufferInfo</key>
+            <false/>
+            <key>AppleImageConversion</key>
+            <false/>
+            <key>AppleImg4Verification</key>
+            <false/>
+            <key>AppleKeyMap</key>
+            <false/>
+            <key>AppleRtcRam</key>
+            <false/>
+            <key>AppleSecureBoot</key>
+            <false/>
+            <key>AppleSmcIo</key>
+            <false/>
+            <key>AppleUserInterfaceTheme</key>
+            <false/>
+            <key>DataHub</key>
+            <false/>
+            <key>DeviceProperties</key>
+            <false/>
+            <key>FirmwareVolume</key>
+            <true/>
+            <key>HashServices</key>
+            <false/>
+            <key>OSInfo</key>
+            <false/>
+            <key>UnicodeCollation</key>
+            <false/>
+        </dict>
+        <key>Quirks</key>
+        <dict>
+            <key>ActivateHpetSupport</key>
+            <false/>
+            <key>DisableSecurityPolicy</key>
+            <false/>
+            <key>EnableVectorAcceleration</key>
+            <true/>
+            <key>EnableVmx</key>
+            <false/>
+            <key>ExitBootServicesDelay</key>
+            <integer>0</integer>
+            <key>ForceOcWriteFlash</key>
+            <false/>
+            <key>ForgeUefiSupport</key>
+            <false/>
+            <key>IgnoreInvalidFlexRatio</key>
+            <true/> <!-- Haswell may need this -->
+            <key>ReleaseUsbOwnership</key>
+            <false/>
+            <key>ReloadOptionRoms</key>
+            <false/>
+            <key>RequestBootVarRouting</key>
+            <true/>
+            <key>ResizeGpuBars</key>
+            <integer>-1</integer>
+            <key>TscSyncTimeout</key>
+            <integer>0</integer>
+            <key>UnblockFsConnect</key>
+            <false/>
+        </dict>
+        <key>ReservedMemory</key>
+        <array/>
+    </dict>
+</dict>
+</plist>
+"""
+        }
+        self.clover_configs = {
+            "clover_generic_intel": """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>ACPI</key>
+    <dict>
+        <key>DSDT</key>
+        <dict>
+            <key>Fixes</key>
+            <dict>
+                <key>FixHPET</key>
+                <true/>
+                <key>FixShutdown</key>
+                <true/>
+            </dict>
+            <key>Name</key>
+            <string>DSDT.aml</string>
+            <key>Patches</key>
+            <array/>
+        </dict>
+        <key>SSDT</key>
+        <dict>
+            <key>DropOem</key>
+            <false/>
+            <key>Generate</key>
+            <dict>
+                <key>CStates</key>
+                <false/>
+                <key>PStates</key>
+                <false/>
+            </dict>
+        </dict>
+    </dict>
+    <key>Boot</key>
+    <dict>
+        <key>Arguments</key>
+        <string>-v debug=0x100 keepsyms=1 alcid=1</string>
+        <key>DefaultVolume</key>
+        <string>LastBootedVolume</string>
+        <key>NeverHibernate</key>
+        <true/>
+        <key>Secure</key>
+        <false/>
+        <key>Timeout</key>
+        <integer>5</integer>
+        <key>XMPDetection</key>
+        <string>Yes</string>
+    </dict>
+    <key>Devices</key>
+    <dict>
+        <key>Audio</key>
+        <dict>
+            <key>Inject</key>
+            <string>1</string>
+        </dict>
+        <key>USB</key>
+        <dict>
+            <key>FixOwnership</key>
+            <true/>
+            <key>Inject</key>
+            <true/>
+        </dict>
+    </dict>
+    <key>GUI</key>
+    <dict>
+        <key>Mouse</key>
+        <dict>
+            <key>Enabled</key>
+            <true/>
+        </dict>
+        <key>Scan</key>
+        <dict>
+            <key>Entries</key>
+            <true/>
+            <key>Legacy</key>
+            <string>First</string>
+            <key>Tool</key>
+            <true/>
+        </dict>
+        <key>Theme</key>
+        <string>embedded</string>
+    </dict>
+    <key>Graphics</key>
+    <dict>
+        <key>Inject</key>
+        <dict>
+            <key>ATI</key>
+            <false/>
+            <key>Intel</key>
+            <true/> <!-- Generic, may need to be false if dGPU used -->
+            <key>NVidia</key>
+            <false/>
+        </dict>
+    </dict>
+    <key>KernelAndKextPatches</key>
+    <dict>
+        <key>AppleIntelCPUPM</key>
+        <true/> <!-- For Sandy/Ivy Bridge -->
+        <key>AppleRTC</key>
+        <true/>
+        <key>KernelPm</key>
+        <true/> <!-- For Haswell+ and some Ivy -->
+        <key>KextsToPatch</key>
+        <array/>
+    </dict>
+    <key>RtVariables</key>
+    <dict>
+        <key>BooterConfig</key>
+        <string>0x28</string>
+        <key>CsrActiveConfig</key>
+        <string>0x67</string>
+    </dict>
+    <key>SMBIOS</key>
+    <dict>
+        <key>ProductName</key>
+        <string>iMac14,2</string> <!-- Generic Haswell SMBIOS -->
+        <key>Trust</key>
+        <true/>
+    </dict>
+    <key>SystemParameters</key>
+    <dict>
+        <key>InjectKexts</key>
+        <string>Yes</string>
+        <key>InjectSystemID</key>
+        <true/>
+    </dict>
+</dict>
+</plist>
+"""
+        }
+
+    def get_config_plist(self, bootloader_type, architecture_key):
+        self.u.cprint(f"Looking for config: {bootloader_type}, {architecture_key}", "green")
+        if bootloader_type == "opencore":
+            return self.opencore_configs.get(architecture_key)
+        elif bootloader_type == "clover":
+            return self.clover_configs.get(architecture_key)
+        return None
+
+    def get_available_architectures(self, bootloader_type):
+        if bootloader_type == "opencore":
+            return list(self.opencore_configs.keys())
+        elif bootloader_type == "clover":
+            return list(self.clover_configs.keys())
+        return []
+
 # --- Main Application Class (SkyscopeTool) ---
 class SkyscopeTool:
     def __init__(self):
         self.u = Utils()
+        self.efi_cfg_mgr = EFIConfigManager(self.u) # Instantiate here
         self.d = Downloader(self.u)
         self.cm = CatalogManager(self.u, self.d)
         self.main_download_cache_dir = DOWNLOAD_CACHE_DIR
         self.temp_dir_base = DOWNLOAD_CACHE_DIR / "temp_extractions"
         self.is_linux = sys.platform.startswith("linux")
         self.disk_mgr = None
+
+        # Define ESSENTIAL_LINUX_TOOLS and TOOL_TO_PACKAGE
+        self.ESSENTIAL_LINUX_TOOLS = [
+            "parted", "mkfs.vfat", "mkfs.hfsplus", "7z", "dd",
+            "rsync", "lsblk", "fdisk", "umount", "mount",
+            "blockdev", "partprobe", "sync"
+        ]
+        self.TOOL_TO_PACKAGE = {
+            "parted": "parted",
+            "mkfs.vfat": "dosfstools",
+            "mkfs.hfsplus": "hfsprogs or hfsplus-tools",
+            "7z": "p7zip-full or p7zip",
+            "dd": "coreutils (usually pre-installed)",
+            "rsync": "rsync",
+            "lsblk": "util-linux (usually pre-installed)",
+            "fdisk": "util-linux (usually pre-installed)",
+            "umount": "util-linux (usually pre-installed)",
+            "mount": "util-linux (usually pre-installed)",
+            "blockdev": "util-linux (usually pre-installed)",
+            "partprobe": "parted or util-linux",
+            "sync": "coreutils (usually pre-installed)"
+        }
+
         if self.is_linux:
+            # Initialize LinuxDiskManager first, as _check_dependencies might not be strictly necessary
+            # if the user isn't going to perform USB creation. However, for this tool's purpose,
+            # it's better to check upfront.
             try:
                 from skyscope_diskutils_linux import Disk as LinuxDiskManager
                 self.disk_mgr = LinuxDiskManager(self.u)
                 self.u.cprint("Linux Disk Manager initialized.", "green")
-            except ImportError: self.u.cprint("LinuxDiskManager not found. USB creation disabled.", "yellow")
-            except Exception as e: self.u.cprint(f"Error initializing LinuxDiskManager: {e}", "red")
-        else: self.u.cprint("Non-Linux platform. USB creation disabled.", "yellow")
+            except ImportError:
+                self.u.cprint("LinuxDiskManager (skyscope_diskutils_linux.py) not found. USB creation will be disabled.", "red")
+                self.is_linux = False # Disable USB functions if manager fails
+            except Exception as e:
+                self.u.cprint(f"Error initializing LinuxDiskManager: {e}", "red")
+                self.is_linux = False # Disable USB functions if manager fails
+
+            if self.is_linux: # If disk manager initialized, then check other tools
+                self._check_dependencies() # This will sys.exit if critical tools are missing
+        else:
+            self.u.cprint("Non-Linux platform. USB creation functions will be disabled.", "yellow")
+
+        # Bootloader specific constants
+        self.OC_ESSENTIAL_DRIVERS = ["HfsPlus.efi", "OpenRuntime.efi"]
+        self.OC_ESSENTIAL_KEXTS = ["Lilu.kext", "VirtualSMC.kext", "WhateverGreen.kext"] # Directory names
+        self.OC_LEGACY_BOOT_FILES = {"boot0": "boot0", "boot1f32": "boot1f32"} # Generic name to actual filename
+        self.OC_RELEASE_URL = "https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest"
+
+        self.CLOVER_ESSENTIAL_DRIVERS_UEFI = ["HFSPlus.efi", "ApfsDriverLoader.efi", "VBoxHfs.efi"]
+        self.CLOVER_ESSENTIAL_KEXTS_OTHER = ["FakeSMC.kext", "Lilu.kext", "WhateverGreen.kext"]
+        self.CLOVER_LEGACY_BOOT_FILES = {"boot0": "boot0af", "boot1f32": "boot1f32alt"} # Common names
+        self.CLOVER_RELEASE_URL = "https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest"
+        self.OC_LITTLE_TRANSLATED_URL = "https://github.com/5T33Z0/OC-Little-Translated"
+
         self.show_all_removable_disks_toggle = False
         try:
             self.temp_dir_base.mkdir(parents=True, exist_ok=True)
         except OSError as e:
              self.u.cprint(f"Could not create base temp directory '{self.temp_dir_base}': {e}", "red")
+
+    def _check_dependencies(self):
+        if not self.is_linux:
+            return True
+
+        self.u.head("Checking System Dependencies")
+        missing_tools_map = {}
+
+        for tool in self.ESSENTIAL_LINUX_TOOLS:
+            tool_path = shutil.which(tool)
+            if tool_path:
+                self.u.cprint(f"  Checking for '{tool}'... Found ({tool_path})", "green")
+            else:
+                self.u.cprint(f"  Checking for '{tool}'... NOT FOUND", "red")
+                missing_tools_map[tool] = self.TOOL_TO_PACKAGE.get(tool, "unknown_package")
+
+        if missing_tools_map:
+            self.u.cprint("\nError: The following essential tools are missing:", "red")
+            for tool, pkg_suggestion in missing_tools_map.items():
+                self.u.cprint(f"  - {tool} (Package suggestion: {pkg_suggestion})", "red")
+            self.u.cprint("\nPlease install them using your system's package manager.", "yellow")
+            self.u.cprint("Example for Debian/Ubuntu: sudo apt update && sudo apt install <package_name>", "yellow")
+            self.u.cprint("Example for Fedora: sudo dnf install <package_name>", "yellow")
+            self.u.cprint("\nThis tool cannot proceed without these dependencies for USB creation.", "red")
+            input("Press Enter to exit.")
+            sys.exit(1)
+        else:
+            self.u.cprint("\nAll essential tools found.", "green")
+            time.sleep(1)
+        return True
 
 
     def display_main_menu(self):
@@ -693,9 +2758,9 @@ class SkyscopeTool:
 
     def handle_create_usb_menu(self):
         self.u.head("Create macOS Bootable USB")
-        if not self.is_linux or not self.disk_mgr:
-            self.u.cprint("This feature is currently only supported on Linux and requires disk utilities.", "red")
-            self.u.cprint("Please ensure you are on Linux and 'lsblk' is available.", "red")
+        if not self.is_linux or not self.disk_mgr: # Check if USB functions are enabled
+            self.u.cprint("This feature is currently only supported on Linux and requires all dependencies.", "red")
+            self.u.cprint("Please ensure you are on Linux and all tools listed by _check_dependencies are installed.", "red")
             return
 
         selected_usb_path = self._select_usb_device()
@@ -743,6 +2808,9 @@ class SkyscopeTool:
         use_gpt = True if gpt_choice == 'y' else False
         self.u.cprint(f"Using {'GPT' if use_gpt else 'MBR'} partitioning scheme.", "green")
 
+        # Determine EFI partition path (used later for bootloader)
+        efi_partition_path = selected_usb_path + ("p1" if "nvme" in selected_usb_path else "1")
+
         if self.prepare_usb_device(selected_usb_path, volume_name=volume_name, gpt_scheme=use_gpt):
             self.u.cprint(f"USB device '{selected_usb_path}' prepared successfully for {selected_product['title']}.", "green")
 
@@ -756,8 +2824,66 @@ class SkyscopeTool:
 
                 if self.write_macos_to_usb(final_payload_dir_path_str, target_hfs_partition, selected_product['title']):
                     self.u.cprint("Successfully wrote macOS content to USB.", "green")
-                    # Next: Bootloader installation
-                    self.u.cprint("Next step: Bootloader installation (not yet fully implemented).", "yellow")
+
+                    # --- Bootloader Selection ---
+                    self.u.head("Select Bootloader / EFI Setup")
+                    self.u.cprint("1. Install OpenCore (Recommended for modern setups)", "green")
+                    self.u.cprint("2. Install Clover (Legacy / Specific Hardware)", "green")
+                    self.u.cprint("3. Use Custom EFI Folder (Provide your own)", "green")
+                    self.u.cprint("S. Skip Bootloader Installation", "yellow")
+                    self.u.cprint("Q. Quit to Main Menu", "yellow")
+
+                    bootloader_choice = input("Enter your choice: ").strip().lower()
+
+                    bootloader_installed_type = None # To track if OC/Clover generic was used
+                    action_taken_by_bootloader_handler = False # Tracks if any choice in this menu led to an action
+
+                    if bootloader_choice == '1':
+                        self.u.cprint("OpenCore selected. Proceeding to OpenCore installation steps...", "green")
+                        if self._handle_opencore_installation(efi_partition_path, selected_usb_path, use_gpt):
+                            # If _handle_opencore_installation returns True, it implies a generic config was likely placed.
+                            # The method itself now handles detailed user warnings.
+                            bootloader_installed_type = "opencore"
+                        action_taken_by_bootloader_handler = True
+                    elif bootloader_choice == '2':
+                        self.u.cprint("Clover selected. Proceeding to Clover installation steps...", "green")
+                        if self._handle_clover_installation(efi_partition_path, selected_usb_path, use_gpt):
+                            bootloader_installed_type = "clover"
+                        action_taken_by_bootloader_handler = True
+                    elif bootloader_choice == '3':
+                        self.u.cprint("Custom EFI folder selected.", "green")
+                        if self._handle_custom_efi_copy(efi_partition_path): # Pass the string path
+                             bootloader_installed_type = "custom"
+                        action_taken_by_bootloader_handler = True
+                    elif bootloader_choice == 's':
+                        self.u.cprint("Skipping bootloader installation. The USB will have macOS files but no bootloader from this script.", "yellow")
+                        action_taken_by_bootloader_handler = True
+                    elif bootloader_choice == 'q':
+                        self.u.cprint("Quitting USB creation process and returning to main menu.", "yellow")
+                        action_taken_by_bootloader_handler = True # User chose to quit this sub-process
+                        # No sys.exit here, just return from this method to go back to main menu loop
+                    else:
+                        self.u.cprint("Invalid bootloader choice. Skipping bootloader installation.", "yellow")
+                        action_taken_by_bootloader_handler = True
+
+                    # --- Final Summary Message ---
+                    # This message is displayed if a bootloader installation path (OC/Clover generic) was taken.
+                    # The specific detailed warnings are now inside _handle_opencore_installation and _handle_clover_installation.
+                    # This serves as a final general reminder if those paths were taken.
+                    if bootloader_installed_type in ["opencore", "clover"]:
+                        self.u.cprint("-" * 70, "yellow")
+                        self.u.cprint("IMPORTANT REMINDER (Final Step):", "yellow")
+                        self.u.cprint(f"The installed {bootloader_installed_type.title()} configuration is GENERIC.", "yellow")
+                        self.u.cprint("You MUST review and customize the config.plist for your specific hardware", "yellow")
+                        self.u.cprint("before attempting to boot from the USB drive.", "yellow")
+                        self.u.cprint("Refer to the Dortania guides and other resources mentioned during the setup and in the Help section.", "yellow")
+                        self.u.cprint("-" * 70, "yellow")
+                    elif bootloader_installed_type == "custom":
+                        self.u.cprint("Custom EFI folder was copied. Ensure it is correctly configured for your hardware.", "green")
+
+                    self.u.cprint("\nUSB creation process complete!", "green")
+                    # --- End Final Summary Message ---
+
                 else:
                     self.u.cprint("Failed to write macOS content to USB.", "red")
 
@@ -766,6 +2892,634 @@ class SkyscopeTool:
                 self.u.cprint("Failed to extract macOS payload. Cannot proceed with USB creation.", "red")
         else:
             self.u.cprint(f"Failed to prepare USB device '{selected_usb_path}'. Check errors above.", "red")
+
+    # --- Bootloader Handling Methods ---
+    def _select_cpu_architecture_for_config(self, bootloader_type):
+        self.u.head(f"Select CPU Architecture for {bootloader_type.title()} Generic Config")
+
+        available_archs = self.efi_cfg_mgr.get_available_architectures(bootloader_type)
+        if not available_archs:
+            self.u.cprint(f"No generic {bootloader_type} configurations available.", "yellow")
+            return None
+
+        self.u.cprint("Available generic configurations:", "green")
+        for i, arch_key in enumerate(available_archs):
+            # Attempt to pretty print the key
+            # e.g., "oc_sandybridge_generic" -> "OpenCore Sandy Bridge (Generic)"
+            # e.g., "clover_generic_intel" -> "Clover Generic Intel"
+            parts = arch_key.split('_')
+            name = " ".join(p.title() for p in parts[1:])
+            self.u.cprint(f"  {i+1}. {name}", "green")
+
+        self.u.cprint("  S. Skip / Use Default (Sample.plist or bootloader default)", "yellow")
+        self.u.cprint("  B. Back to previous menu", "yellow")
+
+        while True:
+            choice_str = input("Enter your choice: ").strip().lower()
+            if choice_str == 'b':
+                return "BACK"
+            if choice_str == 's':
+                self.u.cprint("Skipping selection of a specific generic config.", "yellow")
+                return None # Indicates skip / use default
+            try:
+                choice_idx = int(choice_str) - 1
+                if 0 <= choice_idx < len(available_archs):
+                    selected_key = available_archs[choice_idx]
+                    self.u.cprint(f"Selected architecture key: {selected_key}", "green")
+                    return selected_key
+                else:
+                    self.u.cprint(f"Invalid selection. Please enter a number between 1 and {len(available_archs)}, or S/B.", "yellow")
+            except ValueError:
+                self.u.cprint("Invalid input. Please enter a number, S, or B.", "yellow")
+        return None
+
+
+    def _handle_opencore_installation(self, efi_partition_path, usb_device_path, gpt_scheme):
+        self.u.head("OpenCore Installation")
+
+        oc_download_dir = self.temp_dir_base / "opencore_download"
+        oc_extract_dir = self.temp_dir_base / "opencore_extracted"
+        efi_mount_point_path = None # Define before try for cleanup
+
+        try:
+            oc_download_dir.mkdir(parents=True, exist_ok=True)
+            oc_extract_dir.mkdir(parents=True, exist_ok=True)
+
+            # 1. Fetching OpenCore
+            self.u.cprint("Fetching latest OpenCore release information...", "green")
+            release_info_str = self.d.get_string(self.OC_RELEASE_URL)
+            if not release_info_str:
+                self.u.cprint("Failed to fetch OpenCore release info. Check internet or URL.", "red")
+                return False
+
+            oc_zip_url = None
+            oc_zip_name = None
+            try:
+                release_data = json.loads(release_info_str)
+                for asset in release_data.get("assets", []):
+                    if asset.get("name", "").upper().endswith("-RELEASE.ZIP"): # Acidanthera uses uppercase
+                        oc_zip_url = asset.get("browser_download_url")
+                        oc_zip_name = asset.get("name")
+                        break
+                if not oc_zip_url:
+                    self.u.cprint("Could not find RELEASE.zip in OpenCore release assets.", "red")
+                    return False
+            except json.JSONDecodeError:
+                self.u.cprint("Failed to parse OpenCore release JSON.", "red")
+                return False
+
+            self.u.cprint(f"Found OpenCore release: {oc_zip_name}", "green")
+            target_zip_path = oc_download_dir / oc_zip_name
+            if not self.d.stream_to_file(oc_zip_url, str(target_zip_path)):
+                self.u.cprint(f"Failed to download OpenCore ZIP from {oc_zip_url}.", "red")
+                return False
+            self.u.cprint(f"OpenCore downloaded to: {target_zip_path}", "green")
+
+            # 2. Extracting OpenCore
+            if not self._extract_archive(target_zip_path, oc_extract_dir, "OpenCore PKG"):
+                self.u.cprint("Failed to extract OpenCore ZIP.", "red")
+                return False
+
+            source_efi_dir = oc_extract_dir / "X64" / "EFI"
+            if not source_efi_dir.is_dir():
+                self.u.cprint(f"Extracted OpenCore does not contain '{source_efi_dir}'.", "red")
+                return False
+
+            # 3. Mount EFI Partition
+            efi_mount_point_path = pathlib.Path(tempfile.mkdtemp(prefix="efi_mount_", dir=str(self.temp_dir_base)))
+            self.u.cprint(f"Mounting EFI partition '{efi_partition_path}' to '{efi_mount_point_path}'...", "green")
+            mount_cmd = ["mount", efi_partition_path, str(efi_mount_point_path)]
+            mount_result = self._run_command(mount_cmd, "Mount EFI partition", check=False)
+            if not mount_result or mount_result.returncode != 0:
+                self.u.cprint(f"Failed to mount EFI partition '{efi_partition_path}'.", "red")
+                return False
+
+            # 4. Install OpenCore Files
+            target_efi_base = efi_mount_point_path / "EFI"
+            target_oc_dir = target_efi_base / "OC"
+
+            self.u.cprint(f"Copying base OpenCore EFI files from '{source_efi_dir}' to '{target_efi_base}'...", "green")
+            shutil.copytree(source_efi_dir, target_efi_base, dirs_exist_ok=True)
+
+            # Ensure essential Kexts and Drivers directories exist
+            (target_oc_dir / "Drivers").mkdir(parents=True, exist_ok=True)
+            (target_oc_dir / "Kexts").mkdir(parents=True, exist_ok=True)
+
+            self.u.cprint("Copying essential OpenCore drivers...", "green")
+            for driver_name in self.OC_ESSENTIAL_DRIVERS:
+                source_driver = source_efi_dir / "OC" / "Drivers" / driver_name
+                if source_driver.exists():
+                    shutil.copy2(source_driver, target_oc_dir / "Drivers" / driver_name)
+                    self.u.cprint(f"  Copied: {driver_name}", "green")
+                else:
+                    self.u.cprint(f"  Warning: Essential driver '{driver_name}' not found in OpenCore package.", "yellow")
+
+            self.u.cprint("Copying essential OpenCore Kexts (directories)...", "green")
+            for kext_dir_name in self.OC_ESSENTIAL_KEXTS:
+                source_kext_dir = source_efi_dir / "OC" / "Kexts" / kext_dir_name
+                if source_kext_dir.is_dir():
+                    shutil.copytree(source_kext_dir, target_oc_dir / "Kexts" / kext_dir_name, dirs_exist_ok=True)
+                    self.u.cprint(f"  Copied: {kext_dir_name}", "green")
+                else:
+                    self.u.cprint(f"  Warning: Essential Kext directory '{kext_dir_name}' not found in OpenCore package.", "yellow")
+
+            sample_plist_path = target_oc_dir / "Sample.plist" # Default if no specific choice
+            config_plist_path = target_oc_dir / "config.plist"
+
+            # --- CPU Architecture Specific Config ---
+            arch_key = self._select_cpu_architecture_for_config("opencore")
+
+            if arch_key and arch_key != "BACK":
+                config_plist_str = self.efi_cfg_mgr.get_config_plist("opencore", arch_key)
+                if config_plist_str:
+                    try:
+                        with open(config_plist_path, "w", encoding="utf-8") as f:
+                            f.write(config_plist_str)
+                        self.u.cprint(f"Installed generic OpenCore config.plist for '{arch_key}'.", "green")
+                        # Enhanced Warning Message
+                        self.u.cprint("-" * 70, "yellow")
+                        self.u.cprint("IMPORTANT: A GENERIC OpenCore config.plist has been installed!", "yellow")
+                        self.u.cprint("This is a basic template and WILL REQUIRE CUSTOMIZATION for your specific hardware.", "yellow")
+                        self.u.cprint("Without proper customization, your system may NOT boot or may have issues.", "red")
+                        self.u.cprint("Please consult detailed guides to correctly configure it:", "yellow")
+                        self.u.cprint("  - Dortania's OpenCore Install Guide: https://dortania.github.io/OpenCore-Install-Guide/", "green")
+                        self.u.cprint(f"  - OC-Little Translated (Advanced): {self.OC_LITTLE_TRANSLATED_URL}", "green")
+                        self.u.cprint("Key areas to check: SMBIOS (PlatformInfo), ACPI, DeviceProperties, Kernel (Quirks, Kexts).", "yellow")
+                        self.u.cprint("-" * 70, "yellow")
+                    except IOError as e:
+                        self.u.cprint(f"Error writing generic config.plist: {e}", "red")
+                        self.u.cprint("Falling back to Sample.plist if available.", "yellow")
+                        if sample_plist_path.exists(): shutil.copy2(sample_plist_path, config_plist_path)
+                        else: self.u.cprint(f"Critical: Sample.plist also not found at {sample_plist_path}", "red")
+                else: # Should not happen if arch_key is from get_available_architectures
+                    self.u.cprint(f"Could not find generic OpenCore config for '{arch_key}'. Using Sample.plist.", "yellow")
+                    if sample_plist_path.exists(): shutil.copy2(sample_plist_path, config_plist_path)
+                    else: self.u.cprint(f"Critical: Sample.plist also not found at {sample_plist_path}", "red")
+            elif arch_key == "BACK": # User chose to go back from CPU selection
+                 self.u.cprint("OpenCore installation cancelled by user during CPU architecture selection.", "yellow")
+                 # Mount is handled in finally, but we should indicate failure
+                 return False # Signal failure to proceed
+            else: # User chose to skip (arch_key is None) or no configs were available
+                self.u.cprint("Using default Sample.plist for OpenCore.", "yellow")
+                if sample_plist_path.exists():
+                    shutil.copy2(sample_plist_path, config_plist_path)
+                    self.u.cprint(f"Copied '{sample_plist_path.name}' to '{config_plist_path.name}'.", "green")
+                    self.u.cprint("IMPORTANT: This is a SAMPLE config.plist. It needs to be configured for your specific hardware!", "yellow")
+                else:
+                    self.u.cprint(f"Warning: '{sample_plist_path.name}' not found. Cannot create default config.plist.", "yellow")
+            # --- End CPU Architecture Specific Config ---
+
+            # 5. Legacy Boot Setup (if not gpt_scheme)
+            if not gpt_scheme:
+                self.u.cprint("Setting up OpenCore Legacy Boot (MBR)...", "green")
+                legacy_boot_util_path = oc_extract_dir / "Utilities" / "LegacyBoot"
+                boot0_file = legacy_boot_util_path / self.OC_LEGACY_BOOT_FILES["boot0"]
+                boot1f32_file = legacy_boot_util_path / self.OC_LEGACY_BOOT_FILES["boot1f32"]
+
+                if boot0_file.exists():
+                    dd_mbr_cmd = ["dd", f"if={str(boot0_file)}", f"of={usb_device_path}", "bs=440", "count=1", "conv=fsync"]
+                    if self._run_command(dd_mbr_cmd, "Write OpenCore MBR (boot0)"):
+                         self.u.cprint(f"  Successfully wrote '{boot0_file.name}' to MBR of '{usb_device_path}'.", "green")
+                    else: self.u.cprint(f"  Warning: Failed to write MBR for OpenCore on '{usb_device_path}'.", "yellow")
+                else: self.u.cprint(f"  Warning: OpenCore MBR file '{boot0_file.name}' not found at '{legacy_boot_util_path}'.", "yellow")
+
+                if boot1f32_file.exists():
+                    dd_pbr_cmd = ["dd", f"if={str(boot1f32_file)}", f"of={efi_partition_path}", "conv=fsync"] # No bs/count, write whole file
+                    if self._run_command(dd_pbr_cmd, "Write OpenCore PBR (boot1f32)"):
+                        self.u.cprint(f"  Successfully wrote '{boot1f32_file.name}' to PBR of '{efi_partition_path}'.", "green")
+                    else: self.u.cprint(f"  Warning: Failed to write PBR for OpenCore on '{efi_partition_path}'.", "yellow")
+                else: self.u.cprint(f"  Warning: OpenCore PBR file '{boot1f32_file.name}' not found at '{legacy_boot_util_path}'.", "yellow")
+
+            self.u.cprint("OpenCore installation completed.", "green")
+            return True
+
+        except Exception as e:
+            self.u.cprint(f"An unexpected error occurred during OpenCore installation: {e}", "red")
+            import traceback
+            self.u.cprint(traceback.format_exc(), "yellow") # Print stack trace for debugging
+            return False
+        finally:
+            # Cleanup
+            if efi_mount_point_path and efi_mount_point_path.is_mount():
+                self.u.cprint(f"Unmounting EFI partition '{efi_mount_point_path}'...", "green")
+                self._run_command(["sync"], "Sync before unmount", check=False)
+                umount_res = self._run_command(["umount", "-lf", str(efi_mount_point_path)], "Unmount EFI", check=False)
+                if not umount_res or umount_res.returncode != 0:
+                    self.u.cprint(f"  Warning: Could not unmount {efi_mount_point_path}. Manual check may be needed.", "yellow")
+            if efi_mount_point_path and efi_mount_point_path.exists():
+                shutil.rmtree(efi_mount_point_path, ignore_errors=True)
+
+            if oc_download_dir.exists(): shutil.rmtree(oc_download_dir, ignore_errors=True)
+            if oc_extract_dir.exists(): shutil.rmtree(oc_extract_dir, ignore_errors=True)
+            self.u.cprint("OpenCore temporary files cleaned up.", "green")
+
+
+    def _handle_clover_installation(self, efi_partition_path, usb_device_path, gpt_scheme):
+        self.u.head("Clover Installation")
+
+        clover_download_dir = self.temp_dir_base / "clover_download"
+        clover_extract_dir = self.temp_dir_base / "clover_extracted"
+        efi_mount_point_path = None # Define before try for cleanup
+        clover_pkg_extract_path = None # For multi-stage extractions (e.g. PKG -> ISO -> EFI)
+
+        try:
+            clover_download_dir.mkdir(parents=True, exist_ok=True)
+            clover_extract_dir.mkdir(parents=True, exist_ok=True)
+
+            # 1. Fetching Clover
+            self.u.cprint("Fetching latest Clover release information...", "green")
+            release_info_str = self.d.get_string(self.CLOVER_RELEASE_URL)
+            if not release_info_str:
+                self.u.cprint("Failed to fetch Clover release info. Check internet or URL.", "red"); return False
+
+            clover_asset_url = None
+            clover_asset_name = None
+            try:
+                release_data = json.loads(release_info_str)
+                # Prioritize direct EFI zips, then PKGs, then ISOs (as extraction gets complex)
+                preferred_assets = []
+                for asset in release_data.get("assets", []):
+                    asset_name_lower = asset.get("name", "").lower()
+                    if "clover" in asset_name_lower and asset_name_lower.endswith(".zip"): # e.g. CloverV2-5152.zip
+                        preferred_assets.append({"url": asset.get("browser_download_url"), "name": asset.get("name"), "priority": 1})
+                    elif asset_name_lower.endswith(".pkg"):
+                        preferred_assets.append({"url": asset.get("browser_download_url"), "name": asset.get("name"), "priority": 2})
+                    elif "clover" in asset_name_lower and asset_name_lower.endswith(".tar.xz") or asset_name_lower.endswith(".tar.lzma") or asset_name_lower.endswith(".7z"):
+                         preferred_assets.append({"url": asset.get("browser_download_url"), "name": asset.get("name"), "priority": 0}) # Highest priority if it's a direct EFI archive
+
+                if not preferred_assets and any(asset.get("name","").lower().endswith(".iso") for asset in release_data.get("assets",[])): # Fallback to ISO if nothing else
+                     self.u.cprint("Warning: No direct ZIP/PKG/TAR found for Clover. Attempting ISO (extraction may be limited/fail).", "yellow")
+                     for asset in release_data.get("assets", []):
+                        asset_name_lower = asset.get("name", "").lower()
+                        if "clover" in asset_name_lower and "x64.iso" in asset_name_lower: # Try to get X64 ISO
+                            preferred_assets.append({"url": asset.get("browser_download_url"), "name": asset.get("name"), "priority": 3})
+                            break
+                     if not preferred_assets: # Still no X64 ISO, take any ISO
+                        for asset in release_data.get("assets", []):
+                            asset_name_lower = asset.get("name", "").lower()
+                            if "clover" in asset_name_lower and asset_name_lower.endswith(".iso"):
+                                preferred_assets.append({"url": asset.get("browser_download_url"), "name": asset.get("name"), "priority": 4})
+                                break
+
+                if preferred_assets:
+                    preferred_assets.sort(key=lambda x: x["priority"])
+                    clover_asset_url = preferred_assets[0]["url"]
+                    clover_asset_name = preferred_assets[0]["name"]
+
+                if not clover_asset_url:
+                    self.u.cprint("Could not find a suitable Clover release asset (ZIP, PKG, TAR, or ISO).", "red"); return False
+            except json.JSONDecodeError:
+                self.u.cprint("Failed to parse Clover release JSON.", "red"); return False
+
+            self.u.cprint(f"Found Clover release asset: {clover_asset_name}", "green")
+            target_asset_path = clover_download_dir / clover_asset_name
+            if not self.d.stream_to_file(clover_asset_url, str(target_asset_path)):
+                self.u.cprint(f"Failed to download Clover asset from {clover_asset_url}.", "red"); return False
+            self.u.cprint(f"Clover asset downloaded to: {target_asset_path}", "green")
+
+            # 2. Extracting Clover - This can be multi-stage
+            source_efi_dir_clover = None
+            legacy_boot_source_dir = clover_extract_dir # Default for files like boot0af
+
+            if clover_asset_name.lower().endswith((".zip", ".tar.xz", ".tar.lzma", ".7z")):
+                if not self._extract_archive(target_asset_path, clover_extract_dir, "Clover Archive"):
+                    self.u.cprint("Failed to extract Clover archive.", "red"); return False
+                # Search for EFI folder, it might be nested
+                search_paths = [clover_extract_dir, clover_extract_dir / "CloverV2", clover_extract_dir / "Clover"]
+                for path_to_check in search_paths:
+                    if (path_to_check / "EFI" / "CLOVER").is_dir() and (path_to_check / "EFI" / "BOOT").is_dir():
+                        source_efi_dir_clover = path_to_check / "EFI"
+                        legacy_boot_source_dir = path_to_check # Legacy boot files might be here
+                        break
+                if not source_efi_dir_clover: # Try one level deeper for some tarballs
+                     for item in clover_extract_dir.iterdir():
+                         if item.is_dir() and (item / "EFI" / "CLOVER").is_dir():
+                             source_efi_dir_clover = item / "EFI"
+                             legacy_boot_source_dir = item
+                             break
+            elif clover_asset_name.lower().endswith(".pkg"):
+                clover_pkg_extract_path = clover_extract_dir / "pkg_extracted"
+                if not self._extract_archive(target_asset_path, clover_pkg_extract_path, "Clover PKG"):
+                    self.u.cprint("Failed to extract Clover PKG.", "red"); return False
+                # PKG extraction might give an ISO or a folder structure.
+                # Look for an ISO first (common for official Clover PKGs)
+                iso_files = list(clover_pkg_extract_path.glob("*.iso")) # e.g. Clover.iso
+                if not iso_files: iso_files = list(clover_pkg_extract_path.rglob("*.iso")) # recursive search
+
+                if iso_files:
+                    clover_iso_path = iso_files[0]
+                    self.u.cprint(f"Found Clover ISO inside PKG: {clover_iso_path}", "green")
+                    iso_extract_path = clover_extract_dir / "iso_extracted"
+                    if not self._extract_archive(clover_iso_path, iso_extract_path, "Clover ISO from PKG"):
+                        self.u.cprint("Failed to extract Clover ISO (from PKG).", "red"); return False
+                    if (iso_extract_path / "EFI" / "CLOVER").is_dir(): # ISOs usually have EFI at root
+                        source_efi_dir_clover = iso_extract_path / "EFI"
+                        legacy_boot_source_dir = iso_extract_path # Legacy boot files often at ISO root
+                    else: # Check for common Clover ISO structures like CDROOT/EFI
+                        if (iso_extract_path / "CDROOT" / "EFI" / "CLOVER").is_dir():
+                             source_efi_dir_clover = iso_extract_path / "CDROOT" / "EFI"
+                             legacy_boot_source_dir = iso_extract_path / "CDROOT"
+                else: # No ISO, check if EFI folder is directly in PKG payload
+                    if (clover_pkg_extract_path / "EFI" / "CLOVER").is_dir():
+                         source_efi_dir_clover = clover_pkg_extract_path / "EFI"
+                         legacy_boot_source_dir = clover_pkg_extract_path
+            elif clover_asset_name.lower().endswith(".iso"): # Direct ISO download
+                 iso_extract_path = clover_extract_dir / "iso_extracted_direct"
+                 if not self._extract_archive(target_asset_path, iso_extract_path, "Clover ISO Direct"):
+                     self.u.cprint("Failed to extract Clover ISO (direct).", "red"); return False
+                 if (iso_extract_path / "EFI" / "CLOVER").is_dir():
+                     source_efi_dir_clover = iso_extract_path / "EFI"
+                     legacy_boot_source_dir = iso_extract_path
+                 elif (iso_extract_path / "CDROOT" / "EFI" / "CLOVER").is_dir(): # Some ISOs have CDROOT
+                     source_efi_dir_clover = iso_extract_path / "CDROOT" / "EFI"
+                     legacy_boot_source_dir = iso_extract_path / "CDROOT"
+
+
+            if not source_efi_dir_clover or not source_efi_dir_clover.is_dir():
+                self.u.cprint(f"Could not locate a usable Clover EFI directory after extraction from '{clover_asset_name}'. Structure might be unexpected.", "red")
+                self.u.cprint(f"  Checked path hint: {source_efi_dir_clover if source_efi_dir_clover else 'N/A'}", "yellow")
+                self.u.cprint(f"  Please inspect extracted contents in: {clover_extract_dir}", "yellow")
+                return False
+            self.u.cprint(f"Located Clover EFI source at: {source_efi_dir_clover}", "green")
+
+
+            # 3. Mount EFI Partition
+            efi_mount_point_path = pathlib.Path(tempfile.mkdtemp(prefix="efi_mount_", dir=str(self.temp_dir_base)))
+            self.u.cprint(f"Mounting EFI partition '{efi_partition_path}' to '{efi_mount_point_path}'...", "green")
+            mount_cmd = ["mount", efi_partition_path, str(efi_mount_point_path)]
+            mount_result = self._run_command(mount_cmd, "Mount EFI partition", check=False)
+            if not mount_result or mount_result.returncode != 0:
+                self.u.cprint(f"Failed to mount EFI partition '{efi_partition_path}'.", "red"); return False
+
+            # 4. Install Clover Files
+            target_efi_root_on_usb = efi_mount_point_path / "EFI" # Clover's EFI goes into EFI/
+
+            self.u.cprint(f"Copying Clover EFI files from '{source_efi_dir_clover}' to '{target_efi_root_on_usb}'...", "green")
+            # shutil.copytree(source_efi_dir_clover, target_efi_root_on_usb, dirs_exist_ok=True) # This would create EFI/EFI/...
+            # We need to copy contents of source_efi_dir_clover/* into target_efi_root_on_usb/
+            for item in source_efi_dir_clover.iterdir():
+                target_item_path = target_efi_root_on_usb / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target_item_path, dirs_exist_ok=True)
+                else:
+                    target_efi_root_on_usb.mkdir(parents=True, exist_ok=True) # Ensure parent exists
+                    shutil.copy2(item, target_item_path)
+
+            target_clover_dir = target_efi_root_on_usb / "CLOVER"
+            # Drivers (UEFI) - Clover paths can vary (drivers64UEFI, drivers/UEFI)
+            clover_drivers_uefi_src_options = [
+                source_efi_dir_clover / "CLOVER" / "drivers" / "UEFI",
+                source_efi_dir_clover / "CLOVER" / "drivers64UEFI" # Older Clover
+            ]
+            clover_drivers_uefi_src = next((p for p in clover_drivers_uefi_src_options if p.is_dir()), None)
+            target_drivers_uefi_dir = target_clover_dir / "drivers" / "UEFI" # Standardized target
+            target_drivers_uefi_dir.mkdir(parents=True, exist_ok=True)
+
+            if clover_drivers_uefi_src:
+                self.u.cprint(f"Copying essential Clover UEFI drivers from {clover_drivers_uefi_src}...", "green")
+                for driver_name in self.CLOVER_ESSENTIAL_DRIVERS_UEFI:
+                    source_driver = clover_drivers_uefi_src / driver_name
+                    if source_driver.exists():
+                        shutil.copy2(source_driver, target_drivers_uefi_dir / driver_name)
+                        self.u.cprint(f"  Copied: {driver_name}", "green")
+                    else: self.u.cprint(f"  Warning: Essential UEFI driver '{driver_name}' not found in Clover package at '{clover_drivers_uefi_src}'.", "yellow")
+            else: self.u.cprint("Warning: Standard Clover UEFI drivers source directory not found in package.", "yellow")
+
+            # Kexts (Other)
+            clover_kexts_other_src = source_efi_dir_clover / "CLOVER" / "kexts" / "Other"
+            target_kexts_other_dir = target_clover_dir / "kexts" / "Other"
+            target_kexts_other_dir.mkdir(parents=True, exist_ok=True)
+            if clover_kexts_other_src.is_dir():
+                self.u.cprint("Copying essential Clover Kexts (directories)...", "green")
+                for kext_dir_name in self.CLOVER_ESSENTIAL_KEXTS_OTHER: # These are dir names
+                    source_kext_dir = clover_kexts_other_src / kext_dir_name
+                    if source_kext_dir.is_dir():
+                        shutil.copytree(source_kext_dir, target_kexts_other_dir / kext_dir_name, dirs_exist_ok=True)
+                        self.u.cprint(f"  Copied: {kext_dir_name}", "green")
+                    else: self.u.cprint(f"  Warning: Essential Kext directory '{kext_dir_name}' not found in Clover package at '{clover_kexts_other_src}'.", "yellow")
+            else: self.u.cprint(f"Warning: Clover kexts/Other source directory '{clover_kexts_other_src}' not found.", "yellow")
+
+            # Config.plist
+            config_plist_path_clover = target_clover_dir / "config.plist"
+            # Check if base copy already included a config.plist (some Clover ZIPs might have it)
+            # If not, or if user selects a specific arch, we overwrite.
+
+            # --- CPU Architecture Specific Config ---
+            arch_key_clover = self._select_cpu_architecture_for_config("clover")
+
+            if arch_key_clover and arch_key_clover != "BACK":
+                config_plist_str_clover = self.efi_cfg_mgr.get_config_plist("clover", arch_key_clover)
+                if config_plist_str_clover:
+                    try:
+                        with open(config_plist_path_clover, "w", encoding="utf-8") as f:
+                            f.write(config_plist_str_clover)
+                        self.u.cprint(f"Installed generic Clover config.plist for '{arch_key_clover}'.", "green")
+                        # Enhanced Warning Message for Clover
+                        self.u.cprint("-" * 70, "yellow")
+                        self.u.cprint("IMPORTANT: A GENERIC Clover config.plist has been installed!", "yellow")
+                        self.u.cprint("This is a basic template and WILL REQUIRE CUSTOMIZATION for your specific hardware.", "yellow")
+                        self.u.cprint("Without proper customization, your system may NOT boot or may have issues.", "red")
+                        self.u.cprint("Please consult detailed Clover guides and Hackintosh community resources.", "yellow")
+                        self.u.cprint("  - Search for 'Clover Bootloader guide' and your hardware specifics.", "green")
+                        self.u.cprint("Key areas to check: SMBIOS, ACPI, Devices (Properties), Graphics, KernelAndKextPatches.", "yellow")
+                        self.u.cprint("-" * 70, "yellow")
+                    except IOError as e:
+                        self.u.cprint(f"Error writing generic Clover config.plist: {e}", "red")
+                        self.u.cprint("Clover may use its internal default or require manual setup.", "yellow")
+                else: # Should not happen
+                    self.u.cprint(f"Could not find generic Clover config for '{arch_key_clover}'. Clover may use internal default.", "yellow")
+            elif arch_key_clover == "BACK":
+                self.u.cprint("Clover installation cancelled by user during CPU architecture selection.", "yellow")
+                return False # Signal failure
+            else: # User chose to skip or no specific configs available
+                # Try to copy a sample if one was included in the Clover package and no config.plist exists yet
+                if not config_plist_path_clover.exists():
+                    sample_plist_path_clover_src = source_efi_dir_clover / "CLOVER" / "config.plist.sample"
+                    if not sample_plist_path_clover_src.exists():
+                         sample_plist_path_clover_src = source_efi_dir_clover / "CLOVER" / "config-sample.plist"
+
+                    if sample_plist_path_clover_src.exists():
+                        shutil.copy2(sample_plist_path_clover_src, config_plist_path_clover)
+                        self.u.cprint(f"Copied sample Clover config to '{config_plist_path_clover.name}'.", "green")
+                        self.u.cprint("IMPORTANT: This is a SAMPLE config. It needs to be configured for your specific hardware!", "yellow")
+                    else:
+                         self.u.cprint("No specific generic config chosen, and no sample found in Clover package.", "yellow")
+                         self.u.cprint(f"'{config_plist_path_clover.name}' may be missing or using Clover's internal default.", "yellow")
+                else:
+                    self.u.cprint("Using existing config.plist found in Clover package or skipping specific generic config.", "yellow")
+
+            # --- End CPU Architecture Specific Config ---
+
+            # 5. Legacy Boot Setup
+            if not gpt_scheme:
+                self.u.cprint("Setting up Clover Legacy Boot (MBR)...", "green")
+                # Legacy boot files are often at the root of the Clover distribution archive
+                # legacy_boot_source_dir was determined during extraction
+                boot0_file_name = self.CLOVER_LEGACY_BOOT_FILES["boot0"] # e.g. boot0af
+                boot1f32_file_name = self.CLOVER_LEGACY_BOOT_FILES["boot1f32"] # e.g. boot1f32alt
+
+                boot0_file = legacy_boot_source_dir / boot0_file_name
+                if not boot0_file.exists() and boot0_file_name == "boot0af": # Fallback for boot0
+                    boot0_file = legacy_boot_source_dir / "boot0ss"
+                    if boot0_file.exists(): self.u.cprint(f"  Using fallback MBR boot file: boot0ss", "yellow")
+
+                boot1f32_file = legacy_boot_source_dir / boot1f32_file_name
+
+                if boot0_file.exists():
+                    dd_mbr_cmd = ["dd", f"if={str(boot0_file)}", f"of={usb_device_path}", "bs=440", "count=1", "conv=fsync"] # Some Clover boot0 are 512b, bs=440 is safer for MBR code area
+                    if self._run_command(dd_mbr_cmd, "Write Clover MBR"):
+                         self.u.cprint(f"  Successfully wrote '{boot0_file.name}' to MBR of '{usb_device_path}'.", "green")
+                    else: self.u.cprint(f"  Warning: Failed to write MBR for Clover on '{usb_device_path}'.", "yellow")
+                else: self.u.cprint(f"  Warning: Clover MBR file ('{boot0_file_name}' or 'boot0ss') not found at '{legacy_boot_source_dir}'.", "yellow")
+
+                if boot1f32_file.exists():
+                    dd_pbr_cmd = ["dd", f"if={str(boot1f32_file)}", f"of={efi_partition_path}", "conv=fsync"]
+                    if self._run_command(dd_pbr_cmd, "Write Clover PBR"):
+                        self.u.cprint(f"  Successfully wrote '{boot1f32_file.name}' to PBR of '{efi_partition_path}'.", "green")
+                    else: self.u.cprint(f"  Warning: Failed to write PBR for Clover on '{efi_partition_path}'.", "yellow")
+                else: self.u.cprint(f"  Warning: Clover PBR file '{boot1f32_file.name}' not found at '{legacy_boot_source_dir}'.", "yellow")
+
+            self.u.cprint("Clover installation attempt completed.", "green")
+            return True
+
+        except Exception as e:
+            self.u.cprint(f"An unexpected error occurred during Clover installation: {e}", "red")
+            import traceback
+            self.u.cprint(traceback.format_exc(), "yellow")
+            return False
+        finally:
+            if efi_mount_point_path and efi_mount_point_path.is_mount():
+                self.u.cprint(f"Unmounting EFI partition '{efi_mount_point_path}'...", "green")
+                self._run_command(["sync"], "Sync before unmount", check=False)
+                umount_res = self._run_command(["umount", "-lf", str(efi_mount_point_path)], "Unmount EFI", check=False)
+                if not umount_res or umount_res.returncode != 0:
+                     self.u.cprint(f"  Warning: Could not unmount {efi_mount_point_path}. Manual check may be needed.", "yellow")
+            if efi_mount_point_path and efi_mount_point_path.exists():
+                shutil.rmtree(efi_mount_point_path, ignore_errors=True)
+
+            if clover_download_dir.exists(): shutil.rmtree(clover_download_dir, ignore_errors=True)
+            if clover_extract_dir.exists(): shutil.rmtree(clover_extract_dir, ignore_errors=True)
+            # clover_pkg_extract_path is inside clover_extract_dir, so it's removed with parent
+            self.u.cprint("Clover temporary files cleaned up.", "green")
+
+
+    def _handle_custom_efi_copy(self, efi_partition_path_str):
+        self.u.head("Custom EFI Setup")
+        efi_mount_point_path = None # For finally block
+
+        try:
+            custom_efi_input_path_str = input("Please drag & drop your custom EFI folder here, or type the full path: ").strip()
+            if not custom_efi_input_path_str:
+                self.u.cprint("No path provided. Aborting custom EFI copy.", "yellow")
+                return False
+
+            custom_efi_input_path = pathlib.Path(custom_efi_input_path_str)
+
+            if not custom_efi_input_path.exists() or not custom_efi_input_path.is_dir():
+                self.u.cprint(f"Error: The provided path '{custom_efi_input_path_str}' is not a valid directory or does not exist.", "red")
+                return False
+
+            # Determine the actual source EFI directory to copy
+            source_efi_to_copy = None
+            if custom_efi_input_path.name.upper() == "EFI":
+                source_efi_to_copy = custom_efi_input_path
+            elif (custom_efi_input_path / "EFI").is_dir():
+                source_efi_to_copy = custom_efi_input_path / "EFI"
+
+            if not source_efi_to_copy or not source_efi_to_copy.is_dir():
+                self.u.cprint(f"Error: Could not find an 'EFI' subfolder in '{custom_efi_input_path_str}', nor is the path itself an EFI folder.", "red")
+                self.u.cprint("Please provide a path to a folder named 'EFI', or a folder that contains an 'EFI' subfolder.", "red")
+                return False
+
+            self.u.cprint(f"Validated custom EFI source: {source_efi_to_copy}", "green")
+
+            # Mount EFI Partition
+            efi_mount_point_path = pathlib.Path(tempfile.mkdtemp(prefix="efi_mount_", dir=str(self.temp_dir_base)))
+            self.u.cprint(f"Mounting EFI partition '{efi_partition_path_str}' to '{efi_mount_point_path}'...", "green")
+            mount_cmd = ["mount", efi_partition_path_str, str(efi_mount_point_path)]
+            mount_result = self._run_command(mount_cmd, "Mount EFI partition for custom copy", check=False)
+            if not mount_result or mount_result.returncode != 0:
+                self.u.cprint(f"Failed to mount EFI partition '{efi_partition_path_str}'.", "red")
+                return False
+
+            # Copy EFI Folder
+            target_efi_on_usb = efi_mount_point_path / "EFI"
+
+            self.u.cprint(f"Preparing to copy custom EFI to '{target_efi_on_usb}'...", "green")
+            if target_efi_on_usb.exists():
+                self.u.cprint(f"Removing existing EFI folder at '{target_efi_on_usb}'...", "yellow")
+                try:
+                    shutil.rmtree(target_efi_on_usb)
+                except OSError as e:
+                    self.u.cprint(f"Error removing existing EFI folder '{target_efi_on_usb}': {e}", "red")
+                    return False
+
+            self.u.cprint(f"Copying '{source_efi_to_copy}' to '{target_efi_on_usb}'...", "green")
+            try:
+                shutil.copytree(source_efi_to_copy, target_efi_on_usb)
+                self.u.cprint(f"Successfully copied custom EFI from '{source_efi_to_copy}' to '{target_efi_on_usb}'.", "green")
+            except Exception as e:
+                self.u.cprint(f"Error copying custom EFI folder: {e}", "red")
+                return False
+
+            return True
+
+        except Exception as e:
+            self.u.cprint(f"An unexpected error occurred during custom EFI copy: {e}", "red")
+            import traceback
+            self.u.cprint(traceback.format_exc(), "yellow")
+            return False
+        finally:
+            if efi_mount_point_path: # Ensure it was defined
+                if efi_mount_point_path.is_mount():
+                    self.u.cprint(f"Unmounting EFI partition '{efi_mount_point_path}'...", "green")
+                    self._run_command(["sync"], "Sync before unmount custom EFI", check=False)
+                    umount_res = self._run_command(["umount", "-lf", str(efi_mount_point_path)], "Unmount EFI custom", check=False)
+                    if not umount_res or umount_res.returncode != 0:
+                         self.u.cprint(f"  Warning: Could not unmount {efi_mount_point_path} after custom EFI copy. Manual check may be needed.", "yellow")
+                if efi_mount_point_path.exists(): # Mount point dir itself
+                    shutil.rmtree(efi_mount_point_path, ignore_errors=True)
+            self.u.cprint("Custom EFI copy process finished, temporary files cleaned up.", "green")
+
+    # --- End Bootloader Handling Methods ---
+
+    def display_help_explanations(self):
+        self.u.head("Help / Explanations")
+
+        self.u.cprint("\n--- GPT (GUID Partition Table) vs MBR (Master Boot Record) ---", "yellow")
+        self.u.cprint("  GPT: Modern standard, required for UEFI booting (most modern systems). Recommended.", "green")
+        self.u.cprint("  MBR: Older standard, for legacy BIOS booting. Choose if your system doesn't support UEFI.", "green")
+
+        self.u.cprint("\n--- OpenCore vs Clover ---", "yellow")
+        self.u.cprint("  OpenCore: Newer, more robust, generally recommended for modern macOS versions & hardware.", "green")
+        self.u.cprint("            Requires more careful setup but offers better system stability and compatibility.", "green")
+        self.u.cprint("  Clover:   Older, widely used, might be easier for some legacy systems or specific hardware.", "green")
+        self.u.cprint("            Can be less 'vanilla' than OpenCore.", "green")
+
+        self.u.cprint("\n--- Placeholder URLs / Generic Configs ---", "red") # Changed color to red for emphasis
+        self.u.cprint("  IMPORTANT: This tool may use placeholder URLs for some older macOS versions if official", "yellow")
+        self.u.cprint("             direct download links are not readily available or easily discoverable via Apple's", "yellow")
+        self.u.cprint("             software update catalogs for direct package downloads. These require manual verification.", "yellow")
+        self.u.cprint("  CRITICAL: Generic config.plist files (for OpenCore/Clover) provided by this tool are", "red")
+        self.u.cprint("            EXTREMELY BASIC starting points. They WILL NOT WORK correctly on most systems", "red")
+        self.u.cprint("            without SIGNIFICANT, HARDWARE-SPECIFIC CUSTOMIZATION.", "red")
+        self.u.cprint("            You MUST consult detailed guides like:", "yellow")
+        self.u.cprint("              - Dortania's OpenCore Install Guide: https://dortania.github.io/OpenCore-Install-Guide/", "green")
+        self.u.cprint(f"              - OC-Little Translated (Advanced OC): {self.OC_LITTLE_TRANSLATED_URL}", "green")
+        self.u.cprint("              - Relevant Clover guides (search the Hackintosh community for your hardware).", "green")
+        self.u.cprint("            Failure to customize your config.plist WILL LIKELY lead to boot failures or hardware instability.", "red")
+
+
+        self.u.cprint("\n--- Download Directory ---", "yellow")
+        self.u.cprint(f"  Installers are downloaded to subfolders within: {str(self.main_download_cache_dir)}", "green")
+        self.u.cprint("  You can choose a custom base directory if preferred during the download process.", "green")
+
+        self.u.cprint("\n--- USB Drive Selection ---", "yellow")
+        self.u.cprint("  The tool lists removable USB drives. Double-check size and model.", "green")
+        self.u.cprint("  WARNING: THE SELECTED USB DRIVE WILL BE COMPLETELY ERASED!", "red")
+        self.u.cprint("  A strict confirmation (typing 'ERASE-[device_name]') is required.", "red")
+
+        input("\nPress Enter to return to the main menu...")
 
 
     def run(self):
@@ -779,7 +3533,7 @@ class SkyscopeTool:
             elif choice == '2':
                 self.handle_create_usb_menu()
             elif choice == 'h':
-                self.u.cprint("Help / Explanations feature not fully integrated here yet.", "yellow")
+                self.display_help_explanations()
             elif choice == 'q':
                 self.u.cprint("Exiting Skyscope macOS USB Creator Tool. Goodbye!", "green")
                 break
@@ -793,41 +3547,3 @@ if __name__ == "__main__":
     tool.run()
 
 ```
-
-The `write_macos_to_usb` method has been implemented in `macos_usb_tool.py`.
-
-**Key Changes:**
-
-1.  **`SkyscopeTool.write_macos_to_usb` Method (New)**:
-    *   **Arguments**: Takes `extracted_payload_dir_str` (path to the directory containing `BaseSystem.dmg`/`.chunklist` or a direct-use DMG), `target_hfs_partition_path_str` (e.g., `/dev/sdb2`), and `version_name` (for naming the `.app` bundle).
-    *   **Temporary Mount Point**: Creates a temporary mount point for the HFS+ partition using `tempfile.mkdtemp()`.
-    *   **`try...finally` Block**: Ensures the HFS+ partition is unmounted, the temporary mount point directory is removed, and the `extracted_payload_dir_str` (which was created by `extract_macos_payload`) is also cleaned up.
-    *   **Mount HFS+ Partition**: Attempts to mount the target HFS+ partition. If it fails, the method returns `False`.
-    *   **Payload Type Determination**:
-        *   Checks for `BaseSystem.dmg` and `BaseSystem.chunklist` in `extracted_payload_dir_str`.
-        *   If not found, it checks if `extracted_payload_dir_str` contains a single `.dmg` file (heuristically identifying it as a direct-use installer DMG like El Capitan's `InstallMacOSX.dmg`).
-    *   **Scenario 1 (BaseSystem.dmg + .chunklist)**:
-        *   Creates the directory structure `Install macOS [VersionName].app/Contents/SharedSupport/` on the mounted HFS+ partition.
-        *   Copies `BaseSystem.dmg` and `BaseSystem.chunklist` from `extracted_payload_dir_str` into this `SharedSupport` directory.
-        *   Prints a note that a full installer might require more files (this is a simplified approach for now).
-    *   **Scenario 2 (Direct-use DMG)**:
-        *   **Important**: Unmounts the HFS+ partition *before* using `dd`, as `dd` operates on the raw partition device.
-        *   Uses `dd` (via `self._run_command`) to write the DMG file directly to `target_hfs_partition_path_str`.
-        *   If `dd` fails, it reports an error and returns `False`.
-    *   **Unrecognized Payload**: If neither of the above payload types is recognized, an error is reported, and the method returns `False`.
-    *   Returns `True` if the relevant write operation was successful.
-
-2.  **Integration into `SkyscopeTool.handle_create_usb_menu`**:
-    *   After `extract_macos_payload` successfully returns a `final_payload_dir_path_str`:
-        *   The target HFS+ partition path (e.g., `/dev/sdb2`) is determined.
-        *   `self.write_macos_to_usb()` is called with the payload directory, HFS+ partition path, and the selected product's title as `version_name`.
-        *   Success or failure of `write_macos_to_usb` is reported.
-    *   The cleanup of `final_payload_dir_path_str` is now explicitly handled by the `finally` block within `write_macos_to_usb`.
-
-**Considerations and Potential Issues:**
-
-*   **`dd` to a Formatted Partition**: If `disk_part_erase` formats the HFS+ partition, and then `write_macos_to_usb` (for a direct-use DMG scenario) `dd`s an image over it, the initial formatting was redundant for that specific scenario. This is generally acceptable as `dd` will overwrite it. The key is that the partition *exists* and has the correct type if needed by the bootloader or OS.
-*   **Completeness of `BaseSystem.dmg` copy**: For modern installers, simply copying `BaseSystem.dmg` and `.chunklist` into a basic `.app` structure is a significant simplification of what Apple's `createinstallmedia` does. While this might be enough for some bootloaders to find and start the installer, it might lack other necessary components for a fully functional installer experience or for all macOS versions. This is noted in the code with comments.
-*   **Error Handling in `dd`**: `dd` can be slow. The `_run_command` helper captures output but doesn't show live progress for `dd` unless `status=progress` is universally supported and its output handled (it usually prints to stderr). The current `stream_to_file` has a simulated progress bar, but `_run_command` does not for generic commands.
-
-This implementation provides the core logic for getting the extracted macOS files onto the USB's HFS+ partition based on the type of payload identified. The next steps would be to refine this (if needed based on testing different macOS versions) and then integrate the bootloader installation.
