@@ -1,0 +1,1335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>#Comment</key>
+	<string>Project Chimera Universal Config - Skyscope Sentinel AI, Director. Master Template v1.1</string>
+	<!--
+		Skyscope macOS USB Creator Tool - Master OpenCore Config Template
+		Base Version: 1.0
+		Chimera Style Update: [Jules - Current Date]
+
+		This config.plist is intended as a comprehensive base template.
+		Your tool should parse this template and dynamically update sections
+		marked with "DYNAMIC:", "USER_INPUT:", or "TOOL_GENERATED:" based on
+		user selections and hardware information.
+
+		A Note on rEFInd:
+		While rEFInd is a versatile boot manager, achieving the deep hardware
+		initialization, patching, and spoofing necessary for optimal macOS
+		compatibility on non-Apple hardware (Hackintosh) is best handled by
+		OpenCore. This config.plist is for OpenCore. If you prefer rEFInd's
+		interface, it can be configured to chainload OpenCore, allowing you
+		to benefit from OpenCore's capabilities while using rEFInd as your
+		primary boot menu. Reverse-engineering rEFInd to natively replicate
+		all of OpenCore's macOS-specific functionalities would be a very
+		complex undertaking.
+	-->
+	<key>ACPI</key>
+	<dict>
+		<key>#Comment</key>
+		<string>ACPI Section: Base stability for all modern systems. Curated by Skyscope AI (Model: Dr. Evelyn Reed Profile).</string>
+		<key>Add</key>
+		<array>
+			<!-- DYNAMIC: Your tool should select and enable necessary AML files from EFI/OC/ACPI/ -->
+			<!-- Essential SSDTs -->
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-PLUG-ALT.aml: Essential for native CPU Power Management. For Intel, consider CPU-specific PLUG. For AMD, specific PM SSDTs are needed.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if applicable for Intel/AMD PM -->
+				<key>Path</key>
+				<string>SSDT-PLUG-ALT.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-EC-USBX.aml: Fakes an Embedded Controller &amp; handles USB Power. Essential for boot on most modern platforms.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true, unless a very old system or specific EC exists -->
+				<key>Path</key>
+				<string>SSDT-EC-USBX.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-AWAC.aml: Disables legacy AWAC clock. Required for 300-series+ Intel boards. Can be disabled on older systems or AMD.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if applicable (e.g., Z390+ Intel) -->
+				<key>Path</key>
+				<string>SSDT-AWAC.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-RHUB.aml: Resets USB Root Hubs. Universal fix for post-sleep USB issues.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true for better USB stability -->
+				<key>Path</key>
+				<string>SSDT-RHUB.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-HPET.aml: Resolves IRQ conflicts (HPET, RTC, TIMR). Universal stability enhancement.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true for stability -->
+				<key>Path</key>
+				<string>SSDT-HPET.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-SBUS-MCHC.aml: Injects fake SMBus device. Improves sensor and motherboard compatibility.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true for better compatibility -->
+				<key>Path</key>
+				<string>SSDT-SBUS-MCHC.aml</string>
+			</dict>
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-GPRW.aml: Fix for 'instant wake' from sleep. Enable this and the GPRW->XPRW patch if you have wake issues.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if sleep issues persist and patch is enabled -->
+				<key>Path</key>
+				<string>SSDT-GPRW.aml</string>
+			</dict>
+			<!-- Conditional SSDTs -->
+			<dict>
+				<key>Comment</key>
+				<string>SSDT-DISABLE-IGPU.aml: Disables internal GPU. Use if dGPU is primary and iGPU is unused or causes issues.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if disabling iGPU -->
+				<key>Path</key>
+				<string>SSDT-DISABLE-IGPU.aml</string>
+			</dict>
+			<!-- Add other common SSDTs here as needed, e.g., for specific USB controllers, Thunderbolt, etc. -->
+		</array>
+		<key>Delete</key>
+		<array>
+			<!-- DYNAMIC: Configure if specific OEM tables conflict -->
+			<dict>
+				<key>All</key>
+				<false/>
+				<key>Comment</key>
+				<string>Drop CpuPm: Remove OEM CPU Power Management table if using custom SSDT-PLUG.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if SSDT-PLUG is used and conflicts -->
+				<key>OemTableId</key>
+				<data>Q3B1UG0AAAA=</data> <!-- "CpuPm" -->
+				<key>TableLength</key>
+				<integer>0</integer>
+				<key>TableSignature</key>
+				<data>U1NEVA==</data> <!-- "SSDT" -->
+			</dict>
+			<dict>
+				<key>All</key>
+				<false/>
+				<key>Comment</key>
+				<string>Drop Cpu0Ist: Remove OEM CPU Idle State table if conflicting.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if needed -->
+				<key>OemTableId</key>
+				<data>Q3B1MElzdAA=</data> <!-- "Cpu0Ist" -->
+				<key>TableLength</key>
+				<integer>0</integer>
+				<key>TableSignature</key>
+				<data>U1NEVA==</data> <!-- "SSDT" -->
+			</dict>
+		</array>
+		<key>Patch</key>
+		<array>
+			<!-- DYNAMIC: Add ACPI patches as needed. GPRW->XPRW is common. -->
+			<dict>
+				<key>Comment</key>
+				<string>GPRW->XPRW: Complements SSDT-GPRW for instant wake fix. (Skyscope AI: Dr. Sharma Profile)</string>
+				<key>Count</key>
+				<integer>0</integer>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Set to true if SSDT-GPRW.aml is used or sleep issues persist -->
+				<key>Find</key>
+				<data>R1BSVwI=</data> <!-- GPRW -->
+				<key>Limit</key>
+				<integer>0</integer>
+				<key>Mask</key>
+				<data></data>
+				<key>OemTableId</key>
+				<data></data>
+				<key>Replace</key>
+				<data>WFBSVwI=</data> <!-- XPRW -->
+				<key>ReplaceMask</key>
+				<data></data>
+				<key>Skip</key>
+				<integer>0</integer>
+				<key>TableLength</key>
+				<integer>0</integer>
+				<key>TableSignature</key>
+				<data></data>
+			</dict>
+			<!-- Example: HPET _CRS to XCRS Rename, needed for some systems -->
+			<!--
+			<dict>
+				<key>Comment</key>
+				<string>HPET _CRS to XCRS</string>
+				<key>Count</key>
+				<integer>0</integer>
+				<key>Enabled</key>
+				<false/> <!- TOOL_GENERATED: Set true if needed ->
+				<key>Find</key>
+				<data>X0NSUwig</data>
+				<key>Limit</key>
+				<integer>0</integer>
+				<key>Mask</key>
+				<data></data>
+				<key>OemTableId</key>
+				<data>AAAAAA==</data> <!- Not needed for HPET ->
+				<key>Replace</key>
+				<data>WENSUwig</data>
+				<key>ReplaceMask</key>
+				<data></data>
+				<key>Skip</key>
+				<integer>0</integer>
+				<key>TableLength</key>
+				<integer>0</integer>
+				<key>TableSignature</key>
+				<data>AAAAAA==</data> <!- Not needed for HPET ->
+			</dict>
+			-->
+		</array>
+		<key>Quirks</key>
+		<dict>
+			<key>FadtEnableReset</key>
+			<false/>
+			<key>NormalizeHeaders</key>
+			<false/>
+			<key>RebaseRegions</key>
+			<false/>
+			<key>ResetHwSig</key>
+			<false/>
+			<key>ResetLogoStatus</key>
+			<true/> <!-- Clears BIOS logo status, can help with boot issues on some boards -->
+			<key>SyncTableIds</key>
+			<false/>
+		</dict>
+	</dict>
+	<key>Booter</key>
+	<dict>
+		<key>#Comment</key>
+		<string>Booter Section: Foundational settings for UEFI boot. Managed by Skyscope AI (Model: Kenji Tanaka Profile).</string>
+		<key>MmioWhitelist</key>
+		<array>
+			<!-- DYNAMIC: Add MmioWhitelist entries if DevirtualiseMmio causes issues with specific devices -->
+			<!-- Example:
+			<dict>
+				<key>Address</key>
+				<integer>4278190080</integer> <!- PCI BAR address ->
+				<key>Comment</key>
+				<string>Needed for FakeSMC if DevirtualiseMmio is enabled</string>
+				<key>Enabled</key>
+				<false/>
+			</dict>
+			-->
+		</array>
+		<key>Patch</key>
+		<array>
+			<!-- DYNAMIC: Bootloader patches, rarely needed -->
+		</array>
+		<key>Quirks</key>
+		<dict>
+			<key>AllowRelocationBlock</key>
+			<false/>
+			<key>AvoidRuntimeDefrag</key>
+			<true/> <!-- Essential for macOS memory management -->
+			<key>DevirtualiseMmio</key>
+			<!-- TOOL_GENERATED: Set based on CPU. true for Alder Lake+ & some Broadcom Wi-Fi, false for older or if issues. -->
+			<true/>
+			<key>DisableSingleUser</key>
+			<false/>
+			<key>DisableVariableWrite</key>
+			<false/> <!-- Keep false unless very specific NVRAM protection issues -->
+			<key>DiscardHibernateMap</key>
+			<false/> <!-- Set true if hibernation is not used and causes issues -->
+			<key>EnableSafeModeSlide</key>
+			<true/> <!-- Ensures Safe Mode (Shift key) works -->
+			<key>EnableWriteUnprotector</key>
+			<false/> <!-- Keep false, CRWrite protection should be handled by OpenRuntime -->
+			<key>ForceBooterSignature</key>
+			<false/>
+			<key>ForceExitBootServices</key>
+			<false/> <!-- Keep false unless very specific early boot issues -->
+			<key>ProtectMemoryRegions</key>
+			<false/>
+			<key>ProtectSecureBoot</key>
+			<false/> <!-- macOS doesn't use UEFI Secure Boot in the same way -->
+			<key>ProtectUefiServices</key>
+			<true/> <!-- Protects UEFI services from being overridden by macOS, important for Alder Lake+ -->
+			<key>ProvideCustomSlide</key>
+			<true/> <!-- Essential for kASLR, helps find a suitable memory slide -->
+			<key>ProvideMaxSlide</key>
+			<integer>0</integer> <!-- 0 means OpenCore will determine the max slide -->
+			<key>RebuildAppleMemoryMap</key>
+			<true/> <!-- Essential for macOS memory layout -->
+			<key>ResizeAppleGpuBars</key>
+			<integer>-1</integer> <!-- -1 default. 0 might be needed for some iGPUs if iGPU BAR is too small. -->
+			<key>SetupVirtualMap</key>
+			<true/> <!-- Essential for memory mapping -->
+			<key>SignalAppleOS</key>
+			<false/> <!-- Only for specific Dell systems -->
+			<key>SyncRuntimePermissions</key>
+			<true/> <!-- Synchronizes memory permissions, important for stability -->
+		</dict>
+	</dict>
+	<key>DeviceProperties</key>
+	<dict>
+		<key>#Comment</key>
+		<string>DeviceProperties: Hardware Spoofing &amp; Injection Profiles. Enable and configure relevant entries. (Skyscope AI: Chloe Davis, GPU Lead Profile)</string>
+		<key>Add</key>
+		<dict>
+			<!--
+				DYNAMIC: This section is highly dependent on specific hardware.
+				Your tool needs to identify PCI paths and apply appropriate properties.
+				Use keys starting with # for profile templates that your tool can activate by removing the #.
+			-->
+
+			<key>#DEVICE_Intel_iGPU_UHD630_Example</key> <!-- TOOL_GENERATED: Rename to actual PciRoot path when activated -->
+			<dict>
+				<key>#Comment</key>
+				<string>PROFILE: Intel UHD 630 (Coffee/Comet Lake). TOOL_GENERATED: Enable for iGPU-only systems or iGPU+dGPU. Set PciRoot path.</string>
+				<key>AAPL,ig-platform-id</key>
+				<data>BwPhgQ==</data> <!-- DYNAMIC_VALUE: e.g., Coffee Lake UHD 630 (Desktop, 0x3E9B0007) -->
+				<key>device-id</key>
+				<data>mz4AAA==</data> <!-- DYNAMIC_VALUE: e.g., 0x3E9B for Coffee Lake UHD 630 -->
+				<key>framebuffer-patch-enable</key>
+				<data>AQAAAA==</data> <!-- Enable framebuffer patching -->
+				<key>hda-gfx</key>
+				<string>onboard-1</string> <!-- For HDMI/DP audio from iGPU -->
+				<!-- Add other framebuffer properties as needed -->
+			</dict>
+
+			<key>#DEVICE_AMD_dGPU_Navi2X_Example</key> <!-- TOOL_GENERATED: Rename to actual PciRoot path when activated -->
+			<dict>
+				<key>#Comment</key>
+				<string>PROFILE: AMD Navi 2X (e.g., RX 6800 XT). TOOL_GENERATED: Enable for AMD dGPU systems. Set PciRoot path. May need 'agdpmod=pikera' in boot-args.</string>
+				<!-- Often no specific properties needed for recent AMD GPUs if WhateverGreen is used, but you can add them here if required -->
+				<key>model</key>
+				<string>AMD Radeon RX 6000 Series Generic</string> <!-- DYNAMIC_DESCRIPTION -->
+				<key>agdpmod</key> <!-- This property might be illustrative; actual application is via boot-args or WEG properties -->
+				<string>pikera</string>
+			</dict>
+
+			<key>#DEVICE_NVIDIA_dGPU_Spoof_Example</key> <!-- TOOL_GENERATED: Rename to actual PciRoot path when activated -->
+			<dict>
+				<key>#Comment</key>
+				<string>PROFILE: NVIDIA dGPU Spoof (e.g., GTX 970 as RX 560X). TOOL_GENERATED: Enable for unsupported NVIDIA dGPUs. Set PciRoot, device-id, model. Requires '-wegnoegpu' and 'agdpmod=pikera' (sometimes) in boot-args.</string>
+				<key>device-id</key>
+				<data>72cAAA==</data> <!-- DYNAMIC_VALUE: Spoofed AMD device ID (e.g., 0x67EF for RX 560X) -->
+				<key>model</key>
+				<string>AMD Radeon RX 500 Series Spoof</string> <!-- DYNAMIC_DESCRIPTION: Spoofed model name -->
+			</dict>
+
+			<key>#DEVICE_Onboard_Audio_Example</key> <!-- TOOL_GENERATED: Rename to actual PciRoot path when activated -->
+			<dict>
+				<key>#Comment</key>
+				<string>PROFILE: Onboard Audio. TOOL_GENERATED: Determine PciRoot for Audio (e.g., PciRoot(0x0)/Pci(0x1F,0x3)). Set correct layout-id.</string>
+				<key>layout-id</key>
+				<data>AQAAAA==</data> <!-- DYNAMIC_VALUE: e.g., 1 for ALC887/892/897, consult AppleALC supported codecs -->
+				<key>hda-gfx</key>
+				<string>onboard-1</string> <!-- If audio is passed through GPU HDMI/DP -->
+			</dict>
+
+			<key>#DEVICE_Ethernet_Intel_Example</key> <!-- TOOL_GENERATED: Rename to actual PciRoot path when activated -->
+			<dict>
+				<key>#Comment</key>
+				<string>PROFILE: Intel Ethernet. TOOL_GENERATED: Set PciRoot path. Ensure 'built-in' is set.</string>
+				<key>built-in</key>
+				<data>AQ==</data>
+				<key>model</key>
+				<string>Intel Ethernet Controller Generic</string> <!-- DYNAMIC_DESCRIPTION -->
+			</dict>
+		</dict>
+		<key>Delete</key>
+		<dict>
+			<key>#Comment</key>
+			<string>Use this section to explicitly remove properties from devices, e.g., conflicting NVIDIA properties if spoofing.</string>
+		</dict>
+	</dict>
+	<key>Kernel</key>
+	<dict>
+		<key>#Comment</key>
+		<string>Kernel Section: Kexts are the drivers. Enable only what your hardware needs. (Skyscope AI: Maria Flores, Kext Integrator Profile)</string>
+		<key>Add</key>
+		<array>
+			<!-- DYNAMIC: Your tool should select and enable necessary Kexts from EFI/OC/Kexts/ -->
+			<!-- Ensure correct load order: Lilu first, then plugins like VirtualSMC, then hardware kexts. -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>Lilu.kext</string>
+				<key>Comment</key>
+				<string>Lilu: The core patching engine. ALWAYS ENABLED.</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/Lilu</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>VirtualSMC.kext</string>
+				<key>Comment</key>
+				<string>VirtualSMC: Emulates Apple's System Management Controller. ALWAYS ENABLED.</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/VirtualSMC</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- SMC Plugins -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>SMCProcessor.kext</string>
+				<key>Comment</key>
+				<string>SMC Plugin: CPU temperature monitoring. Recommended.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true for desktops/laptops -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/SMCProcessor</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>SMCSuperIO.kext</string>
+				<key>Comment</key>
+				<string>SMC Plugin: Fan speed monitoring. Recommended if SuperIO chip present.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true for desktops/laptops with SuperIO chips -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/SMCSuperIO</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- SMCLightSensor.kext and SMCBatteryManager.kext for laptops -->
+
+			<!-- GPU -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>WhateverGreen.kext</string>
+				<key>Comment</key>
+				<string>WhateverGreen: GPU patching (Intel, AMD, NVIDIA spoofing). ALWAYS ENABLED.</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/WhateverGreen</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- Audio -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>AppleALC.kext</string>
+				<key>Comment</key>
+				<string>AppleALC: Audio patching for onboard audio. ALWAYS ENABLED (if onboard audio used).</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/AppleALC</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- Ethernet -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>IntelMausi.kext</string>
+				<key>Comment</key>
+				<string>LAN KEXT: For Intel I210-I219, I225, I226 NICs. Enable if you have one.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Intel LAN detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/IntelMausi</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>LucyRTL8125Ethernet.kext</string>
+				<key>Comment</key>
+				<string>LAN KEXT: For Realtek 2.5Gb RTL8125 NICs. Enable if you have one.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Realtek RTL8125 LAN detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/LucyRTL8125Ethernet</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>RealtekRTL8111.kext</string>
+				<key>Comment</key>
+				<string>LAN KEXT: For Realtek Gigabit RTL8111/8168 NICs. Enable if you have one.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Realtek Gigabit LAN detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/RealtekRTL8111</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- Add other Ethernet kexts like AtherosE2200Ethernet.kext etc. -->
+
+			<!-- Wi-Fi / Bluetooth -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>AirportItlwm.kext</string>
+				<key>Comment</key>
+				<string>WIFI KEXT: For Intel WiFi cards. Choose this OR AirportBrcmFixup. DO NOT ENABLE BOTH.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Intel Wi-Fi detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/AirportItlwm</string>
+				<key>MaxKernel</key>
+				<string></string> <!-- DYNAMIC: Set MaxKernel for specific macOS versions if needed -->
+				<key>MinKernel</key>
+				<string></string> <!-- DYNAMIC: Set MinKernel for specific macOS versions if needed -->
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>IntelBluetoothFirmware.kext</string>
+				<key>Comment</key>
+				<string>BT KEXT: For Intel Bluetooth. Enable if using Intel WiFi/BT.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Intel Bluetooth detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/IntelBluetoothFirmware</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>IntelBTPatcher.kext</string>
+				<key>Comment</key>
+				<string>BT KEXT: Intel Bluetooth Patcher (works with Firmware uploader). Enable if using Intel WiFi/BT.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable if Intel Bluetooth detected -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/IntelBTPatcher</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>BlueToolFixup.kext</string>
+				<key>Comment</key>
+				<string>BT KEXT: Bluetooth Hotfix for Monterey+. Load after BT firmware/patcher kexts.</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable for Monterey+ with Intel/Broadcom BT cards -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/BlueToolFixup</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string>21.0.0</string> <!-- For Monterey (Darwin 21.0.0) and newer -->
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- Add Broadcom kexts like BrcmPatchRAM3.kext, BrcmFirmwareData.kext, AirportBrcmFixup.kext etc. -->
+
+			<!-- USB -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>USBInjectAll.kext</string>
+				<key>Comment</key>
+				<string>USB Port Injection (Legacy, prefer USBMap.kext or SSDT-UIAC/SSDT-RHUB for port mapping)</string>
+				<key>Enabled</key>
+				<false/> <!-- TOOL_GENERATED: Enable only if no proper USB mapping is done yet, and XhciPortLimit is true. -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/USBInjectAll</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<!-- Consider USBMap.kext or SSDT-UIAC.aml as preferred alternatives to USBInjectAll.kext -->
+
+			<!-- Other Fixes/Enhancements -->
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>NVMeFix.kext</string>
+				<key>Comment</key>
+				<string>NVMeFix: Patches for non-Apple NVMe SSDs for power management and compatibility.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Generally true if NVMe SSD is used -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/NVMeFix</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>BundlePath</key>
+				<string>RestrictEvents.kext</string>
+				<key>Comment</key>
+				<string>RestrictEvents: Blocks unwanted processes/notifications, improves CPU name visibility in About This Mac.</string>
+				<key>Enabled</key>
+				<true/> <!-- Generally useful -->
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/RestrictEvents</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+		</array>
+		<key>Block</key>
+		<array>
+			<!-- DYNAMIC: Block problematic kexts if necessary -->
+			<!-- Example:
+			<dict>
+				<key>Arch</key>
+				<string>Any</string>
+				<key>Comment</key>
+				<string>Block AppleIntelLpssI2CController if causing issues</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Identifier</key>
+				<string>com.apple.driver.AppleIntelLpssI2CController</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string></string>
+			</dict>
+			-->
+		</array>
+		<key>Emulate</key>
+		<dict>
+			<key>Cpuid1Data</key>
+			<data></data> <!-- DYNAMIC: For CPU spoofing if needed (e.g., Penryn patch for unsupported CPUs) -->
+			<key>Cpuid1Mask</key>
+			<data></data> <!-- DYNAMIC: Mask for Cpuid1Data -->
+			<key>DummyPowerManagement</key>
+			<false/> <!-- Should be false, use SSDT-PLUG or equivalent -->
+			<key>MaxKernel</key>
+			<string></string>
+			<key>MinKernel</key>
+			<string></string>
+		</dict>
+		<key>Force</key>
+		<array>
+			<!-- DYNAMIC: Force load kexts from System/Library/Extensions, rarely needed -->
+		</array>
+		<key>Patch</key>
+		<array>
+			<!-- DYNAMIC: Kernel patches, e.g., for AMD CPUs, specific hardware fixes -->
+			<!-- Example AMD CPU Patches (Core Count) - requires correct matching data -->
+			<!--
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>Base</key>
+				<string>_cpuid_set_info</string>
+				<key>Comment</key>
+				<string>algrey - Force cpuid_cores_per_package 10.13,10.14</string>
+				<key>Count</key>
+				<integer>1</integer>
+				<key>Enabled</key>
+				<false/> <!- TOOL_GENERATED: Enable for AMD CPUs ->
+				<key>Find</key>
+				<data>wegaAAAA</data>
+				<key>Identifier</key>
+				<string>kernel</string>
+				<key>Limit</key>
+				<integer>0</integer>
+				<key>Mask</key>
+				<data>//3/AAAA</data>
+				<key>MaxKernel</key>
+				<string>18.99.99</string>
+				<key>MinKernel</key>
+				<string>17.0.0</string>
+				<key>Replace</key>
+				<data>uAYAAAAA</data> <!- Replace with actual core count ->
+				<key>ReplaceMask</key>
+				<data>//////8A</data>
+				<key>Skip</key>
+				<integer>0</integer>
+			</dict>
+			-->
+		</array>
+		<key>Quirks</key>
+		<dict>
+			<key>AppleCpuPmCfgLock</key>
+			<true/> <!-- Disable CFG Lock in BIOS if possible, otherwise this is needed -->
+			<key>AppleXcpmCfgLock</key>
+			<true/> <!-- Disable CFG Lock in BIOS if possible, otherwise this is needed for XCPM -->
+			<key>AppleXcpmExtraMsrs</key>
+			<false/> <!-- Usually false, true for some specific XCPM scenarios -->
+			<key>AppleXcpmForceBoost</key>
+			<false/> <!-- Usually false, can force max turbo but impacts thermals/power -->
+			<key>CustomPciSerialDevice</key>
+			<false/>
+			<key>CustomSMBIOSGuid</key>
+			<false/> <!-- Usually false, set true if using CustomSMBIOSGuid in PlatformInfo/UpdateSMBIOSMode=Custom -->
+			<key>DisableIoMapper</key>
+			<true/> <!-- Set true if VT-d is enabled in BIOS but not configured for passthrough -->
+			<key>DisableIoMapperMapping</key>
+			<false/>
+			<key>DisableLinkeditJettison</key>
+			<true/> <!-- Recommended for stability, prevents kexts from being removed from memory -->
+			<key>DisableRtcChecksum</key>
+			<false/> <!-- Set true if RTC/CMOS reset issues on boot -->
+			<key>ExtendBTFeatureFlags</key>
+			<false/> <!-- Set true for some Broadcom Bluetooth cards to enable Continuity features -->
+			<key>ExternalDiskIcons</key>
+			<false/> <!-- Set true if external drives show as internal (Orange Icons) -->
+			<key>ForceAquantiaEthernet</key>
+			<false/>
+			<key>ForceSecureBootScheme</key>
+			<false/>
+			<key>IncreasePciBarSize</key>
+			<false/>
+			<key>LapicKernelPanic</key>
+			<false/> <!-- Set true if kernel panics related to LAPIC (Local APIC) on older systems -->
+			<key>LegacyCommpage</key>
+			<false/>
+			<key>PanicNoKextDump</key>
+			<true/> <!-- Provides cleaner panic logs without full kext dump -->
+			<key>PartialPanicDetection</key>
+			<false/>
+			<key>PowerTimeoutKernelPanic</key>
+			<true/> <!-- Prevents kernel panic on sleep/wake power timeout -->
+			<key>ProvideCurrentCpuInfo</key>
+			<true/> <!-- Provides correct CPU info to kernel, important for newer Intel CPUs / some AMD -->
+			<key>SetApfsTrimTimeout</key>
+			<integer>-1</integer> <!-- Default APFS trim timeout. 0 to disable, or specific ms value. -->
+			<key>ThirdPartyDrives</key>
+			<false/> <!-- Usually false, NVMeFix.kext handles non-Apple NVMe drives -->
+			<key>XhciPortLimit</key>
+			<false/> <!-- Should be false, use USB port mapping (USBMap.kext or SSDT) -->
+		</dict>
+		<key>Scheme</key>
+		<dict>
+			<key>CustomKernel</key>
+			<false/>
+			<key>FuzzyMatch</key>
+			<true/> <!-- For older macOS versions with prelinkedkernel, less critical now -->
+			<key>KernelArch</key>
+			<string>Auto</string> <!-- Or x86_64 -->
+			<key>KernelCache</key>
+			<string>Auto</string>
+		</dict>
+	</dict>
+	<key>Misc</key>
+	<dict>
+		<key>#Comment</key>
+		<string>Miscellaneous settings for bootloader behavior. (Skyscope AI: Samuel 'Logs' Jones, Debug Chief Profile)</string>
+		<key>BlessOverride</key>
+		<array>
+			<!-- DYNAMIC: Add paths here if OpenCore is not on the same drive as macOS and needs to bless a custom path -->
+			<!-- Example: <string>\EFI\Microsoft\Boot\bootmgfw.efi</string> -->
+		</array>
+		<key>Boot</key>
+		<dict>
+			<key>ConsoleAttributes</key>
+			<integer>0</integer>
+			<key>HibernateMode</key>
+			<string>None</string> <!-- Valid: None, Auto, RTC, NVRAM. 'None' is safest for desktops. -->
+			<key>HibernateSkipsPicker</key>
+			<false/>
+			<key>HideAuxiliary</key>
+			<false/> <!-- USER_INPUT: Set to true to hide Recovery, Reset NVRAM etc. from picker -->
+			<key>InstanceIdentifier</key>
+			<string></string>
+			<key>LauncherOption</key>
+			<string>Disabled</string> <!-- Valid: Disabled, Full, Short, System. 'Disabled' if using BIOS boot menu. 'Full' for OC as primary. -->
+			<key>LauncherPath</key>
+			<string>Default</string>
+			<key>PickerAttributes</key>
+			<integer>17</integer> <!-- Bitfield for picker features. 17 = OC_ATTR_USE_AUDIO_ASSIST | OC_ATTR_USE_VOICE_OVER -->
+			<key>PickerAudioAssist</key>
+			<false/> <!-- Enable audio assistance in picker -->
+			<key>PickerMode</key>
+			<string>External</string> <!-- Valid: Builtin, External, Apple. 'External' for OpenCanopy themes. -->
+			<key>PickerVariant</key>
+			<string>Acidanthera\GoldenGate</string> <!-- USER_INPUT: Path to theme relative to EFI/OC/Resources/ImageSet. Example: Acidanthera\GoldenGate -->
+			<key>PollAppleHotKeys</key>
+			<true/> <!-- Enable Apple hotkeys (Cmd+V, Cmd+R, Option, etc.) -->
+			<key>ShowPicker</key>
+			<true/> <!-- USER_INPUT: Set to false to auto-boot default selection -->
+			<key>TakeoffDelay</key>
+			<integer>0</integer> <!-- Delay in ms before picker appears -->
+			<key>Timeout</key>
+			<integer>5</integer> <!-- USER_INPUT: Seconds before auto-booting default. 0 to disable. -->
+		</dict>
+		<key>Debug</key>
+		<dict>
+			<key>AppleDebug</key>
+			<true/> <!-- Enable logging of Apple debug messages -->
+			<key>ApplePanic</key>
+			<true/> <!-- Save panic logs to NVRAM -->
+			<key>DisableWatchDog</key>
+			<true/> <!-- Disable watchdog timer that can cause unwanted reboots -->
+			<key>DisplayDelay</key>
+			<integer>0</integer> <!-- Delay in ms for displaying messages on screen -->
+			<key>DisplayLevel</key>
+			<integer>2147483650</integer> <!-- DEBUG_ERROR | DEBUG_WARN | DEBUG_INFO | DEBUG_VERBOSE. (0x80000002) -->
+			<key>LogModules</key>
+			<string>*</string> <!-- Which modules to log. * for all. Empty for none. -->
+			<key>SysReport</key>
+			<false/> <!-- Generate system report on disk (OpenCore-Version-YYYY-MM-DD-HHMMSS-MACHINE_NAME) -->
+			<key>Target</key>
+			<integer>67</integer> <!-- Bitfield: 0=Disable, 1=Log to serial, 2=Log to console, 4=Log to file (opencore-YYYY-MM-DD-HHMMSS.txt), 64=Log to NVRAM -->
+		</dict>
+		<key>Entries</key>
+		<array>
+			<!-- DYNAMIC: Define custom boot entries if needed -->
+			<!-- Example:
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<false/>
+				<key>Comment</key>
+				<string>My Custom Entry</string>
+				<key>Enabled</key>
+				<true/>
+				<key>Name</key>
+				<string>Windows 11</string>
+				<key>Path</key>
+				<string>PciRoot(0x0)/Pci(0x1,0x1)/.../HD(1,GPT,...)\EFI\Microsoft\Boot\bootmgfw.efi</string>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+			-->
+		</array>
+		<key>Security</key>
+		<dict>
+			<key>AllowSetDefault</key>
+			<true/> <!-- Allow Ctrl+Enter in picker to set default boot entry -->
+			<key>ApECID</key>
+			<integer>0</integer> <!-- Apple Enclave ID, for Apple Secure Boot -->
+			<key>AuthRestart</key>
+			<false/> <!-- USER_INPUT: Set to true for password-protected authenticated restart. Default is false. -->
+			<key>BlacklistAppleUpdate</key>
+			<true/> <!-- Prevent Apple from pushing updates that might break boot (e.g., firmware updates) -->
+			<key>DmgLoading</key>
+			<string>Signed</string> <!-- Valid: Any, Signed, Disabled. 'Signed' is recommended. -->
+			<key>EnablePassword</key>
+			<false/> <!-- USER_INPUT: Enable password protection for OpenCore -->
+			<key>ExposeSensitiveData</key>
+			<integer>6</integer> <!-- Bitfield: 1=Lilu kexts, 2=SMC keys, 4=NVRAM variables, 8=Data Hub. 6 = Lilu + SMC. -->
+			<key>HaltLevel</key>
+			<integer>2147483648</integer> <!-- HALT_DEBUG, same as DisplayLevel for critical errors -->
+			<key>PasswordHash</key>
+			<data></data> <!-- USER_INPUT: SHA512 hash of password if EnablePassword is true -->
+			<key>PasswordSalt</key>
+			<data></data> <!-- USER_INPUT: Salt for password if EnablePassword is true -->
+			<key>ScanPolicy</key>
+			<integer>0</integer> <!-- 0 for all devices. Consult OpenCore docs for specific policies. -->
+			<key>SecureBootModel</key>
+			<string>Default</string> <!-- USER_INPUT: Valid: Default, Disabled, j137, etc. 'Default' for most. 'Disabled' for old NVIDIA or specific issues. -->
+			<key>Vault</key>
+			<string>Optional</string> <!-- Valid: Optional, Basic, Secure. 'Optional' for easy setup. -->
+		</dict>
+		<key>Serial</key>
+		<dict>
+			<key>Custom</key>
+			<dict>
+				<key>BaudRate</key>
+				<integer>115200</integer>
+				<key>ClockRate</key>
+				<integer>1843200</integer>
+				<key>DetectCable</key>
+				<false/>
+				<key>ExtendedTxFifoSize</key>
+				<integer>64</integer>
+				<key>FifoControl</key>
+				<integer>7</integer>
+				<key>LineControl</key>
+				<integer>3</integer>
+				<key>PciDeviceInfo</key>
+				<data>/w==</data>
+				<key>RegisterAccessWidth</key>
+				<integer>8</integer>
+				<key>RegisterBase</key>
+				<integer>1016</integer>
+				<key>RegisterStride</key>
+				<integer>1</integer>
+				<key>UseHardwareFlowControl</key>
+				<false/>
+				<key>UseSoftwareFlowControl</key>
+				<false/>
+			</dict>
+			<key>Init</key>
+			<false/> <!-- Enable serial port initialization for debugging if Target includes serial -->
+			<key>Override</key>
+			<false/>
+		</dict>
+		<key>Tools</key>
+		<array>
+			<!-- DYNAMIC: Add tools like OpenShell.efi, CleanNvram.efi, etc. -->
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<true/> <!-- Show in Auxiliary menu (press Space in picker) -->
+				<key>Comment</key>
+				<string>OpenShell.efi: UEFI Shell for debugging.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Set to true to include -->
+				<key>Name</key>
+				<string>UEFI Shell</string>
+				<key>Path</key>
+				<string>OpenShell.efi</string>
+				<key>RealPath</key>
+				<false/>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>NVRAM</key>
+	<dict>
+		<key>#Comment</key>
+		<string>NVRAM: Boot arguments and system variables. (Skyscope AI: Dr. Anya Sharma, Quirks Analyst Profile)</string>
+		<key>Add</key>
+		<dict>
+			<key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key> <!-- System specific NVRAM variables -->
+			<dict>
+				<key>DefaultBackgroundColor</key>
+				<data>AAAAAA==</data> <!-- Black background for boot screen -->
+				<key>UIScale</key>
+				<!-- TOOL_GENERATED: AQ== (normal) or Ag== (HiDPI/Retina) based on display -->
+				<data>AQ==</data>
+			</dict>
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key> <!-- Global macOS NVRAM variables (boot-args etc.) -->
+			<dict>
+				<key>SystemAudioVolume</key>
+				<data>Rg==</data> <!-- Default audio volume (0x46 = 70%) -->
+				<key>boot-args</key>
+				<!-- TOOL_GENERATED: Dynamically build boot arguments. Base: -v (verbose) keepsyms=1 debug=0x100 (debug info). -->
+				<!-- Add alcid=X (audio), agdpmod=pikera (AMD Navi), -wegnoegpu (disable iGPU), etc. as needed. -->
+				<string>-v keepsyms=1 debug=0x100</string>
+				<key>#Comment-boot-args</key>
+				<string>TOOL_GENERATED: Add alcid=X for audio, agdpmod=pikera for Navi/Big Navi GPUs, etc.</string>
+				<key>csr-active-config</key>
+				<!-- TOOL_GENERATED: Set based on desired SIP status. <00000000> for fully enabled. <030A0000> for common partial disable. Consult OpenCore docs. -->
+				<data>AAAAAA==</data>
+				<key>prev-lang:kbd</key>
+				<!-- TOOL_GENERATED: User's language and keyboard layout, e.g., en-US:0 is <656e2d55533a30> -->
+				<data>ZW4tVVM6MA==</data>
+				<key>run-efi-updater</key>
+				<string>No</string> <!-- Prevent automatic EFI updates from macOS installers -->
+			</dict>
+		</dict>
+		<key>Delete</key>
+		<dict>
+			<key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+			<array>
+				<string>UIScale</string>
+				<string>DefaultBackgroundColor</string>
+			</array>
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+			<array>
+				<string>boot-args</string>
+				<string>csr-active-config</string> <!-- Optional: to ensure OC sets it -->
+				<!-- <string>prev-lang:kbd</string> --> <!-- Usually not deleted -->
+			</array>
+		</dict>
+		<key>LegacyOverwrite</key>
+		<false/> <!-- For systems with emulated NVRAM using EmuVariableUefi.efi -->
+		<key>LegacySchema</key>
+		<dict>
+			<!-- DYNAMIC: Define schema for EmuVariableUefi if LegacyOverwrite is true -->
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+			<array>
+				<string>EFILoginHiDPI</string>
+				<string>EFIBluetoothDelay</string>
+				<string>LocationServicesEnabled</string>
+				<string>SystemAudioVolume</string>
+				<string>SystemAudioVolumeDB</string>
+				<string>SystemAudioVolumeSaved</string>
+				<string>bluetoothActiveControllerInfo</string>
+				<string>bluetoothInternalControllerInfo</string>
+				<string>flagstate</string>
+				<string>fmm-computer-name</string>
+				<string>fmm-mobileme-token-FMM</string>
+				<string>fmm-mobileme-token-FMM-BridgeHasAccount</string>
+				<string>nvda_drv</string>
+				<string>prev-lang:kbd</string>
+			</array>
+		</dict>
+		<key>WriteFlash</key>
+		<true/> <!-- Allow writing to NVRAM -->
+	</dict>
+	<key>PlatformInfo</key>
+	<dict>
+		<key>#Comment</key>
+		<string>PlatformInfo: The identity of your Mac. Choose ONE SMBIOS. (Skyscope AI: Isabella Rossi, SMBIOS Guardian Profile)</string>
+		<key>Automatic</key>
+		<true/> <!-- Let OpenCore handle SMBIOS updates -->
+		<key>CustomMemory</key>
+		<false/> <!-- Set true if defining custom memory regions below -->
+		<!-- DYNAMIC: If CustomMemory is true, define MemoryRegions array here -->
+		<key>Generic</key>
+		<dict>
+			<key>#Comment-SystemProductName</key>
+			<string>TOOL_GENERATED: RECOMMENDATIONS based on CPU: iMac20,1/2 (Comet Lake), MacPro7,1 (Xeon/HEDT), Macmini8,1 (Coffee Lake), iMacPro1,1 (Skylake-X)</string>
+			<key>AdviseFeatures</key>
+			<false/> <!-- Set true to advise macOS on feature flags based on SMBIOS model -->
+			<key>MLB</key>
+			<string>GENERATE_YOUR_OWN_MLB</string> <!-- TOOL_GENERATED: Motherboard Logic Board Serial. MUST BE UNIQUE. Use GenSMBIOS. -->
+			<key>MaxBIOSVersion</key>
+			<false/>
+			<key>ProcessorType</key>
+			<integer>0</integer> <!-- 0 for auto. Can be set to specific values for CPU type emulation (e.g., 1537 for Core i5) -->
+			<key>ROM</key>
+			<data>AAAAAA==</data> <!-- TOOL_GENERATED: System ROM (Primary Ethernet MAC address, no colons). MUST BE UNIQUE. Use GenSMBIOS. Example: <001122aabbcc> -->
+			<key>SpoofVendor</key>
+			<true/> <!-- Set to true to spoof vendor as Apple -->
+			<key>SystemMemoryStatus</key>
+			<string>Auto</string> <!-- Valid: Auto, Upgradable, Soldered. -->
+			<key>SystemProductName</key>
+			<string>iMac20,1</string> <!-- TOOL_GENERATED: Target Mac model (e.g., iMac20,1, MacPro7,1, MacBookPro16,1). Selected by user. -->
+			<key>SystemSerialNumber</key>
+			<string>GENERATE_YOUR_OWN_SERIAL</string> <!-- TOOL_GENERATED: System Serial Number. MUST BE UNIQUE. Use GenSMBIOS. -->
+			<key>SystemUUID</key>
+			<string>GENERATE_YOUR_OWN_UUID</string> <!-- TOOL_GENERATED: System UUID. MUST BE UNIQUE. Use GenSMBIOS. -->
+		</dict>
+		<key>UpdateDataHub</key>
+		<true/> <!-- Update Data Hub entries -->
+		<key>UpdateNVRAM</key>
+		<true/> <!-- Update NVRAM with SMBIOS info -->
+		<key>UpdateSMBIOS</key>
+		<true/> <!-- Update SMBIOS tables -->
+		<key>UpdateSMBIOSMode</key>
+		<string>Create</string> <!-- Valid: Create, Custom, Overwrite, TryOverwrite. 'Create' for new SMBIOS. -->
+		<key>UseRawUuidEncoding</key>
+		<false/>
+	</dict>
+	<key>UEFI</key>
+	<dict>
+		<key>#Comment</key>
+		<string>UEFI drivers and quirks. (Skyscope AI: Kenji Tanaka Profile)</string>
+		<key>APFS</key>
+		<dict>
+			<key>EnableJumpstart</key>
+			<true/> <!-- Enable APFS Jumpstart for faster APFS boot -->
+			<key>GlobalConnect</key>
+			<false/> <!-- Connect all APFS containers globally, usually false -->
+			<key>HideVerbose</key>
+			<true/> <!-- Hide verbose APFS logging -->
+			<key>JumpstartHotPlug</key>
+			<false/> <!-- Enable APFS hotplug support -->
+			<key>MinDate</key>
+			<integer>0</integer> <!-- Minimum APFS driver date, 0 for any. Use negative for older macOS (e.g., -1 for High Sierra). -->
+			<key>MinVersion</key>
+			<integer>0</integer> <!-- Minimum APFS driver version, 0 for any. Use negative for older macOS. -->
+		</dict>
+		<key>AppleInput</key>
+		<dict>
+			<key>AppleEvent</key>
+			<string>Builtin</string> <!-- Valid: Auto, Builtin, External. 'Builtin' for most keyboards. -->
+			<key>CustomDelays</key>
+			<false/> <!-- Use custom key delays -->
+			<key>GraphicsInputMirroring</key>
+			<true/> <!-- Mirror graphics input, helps with some touchscreens/tablets -->
+			<key>KeyInitialDelay</key>
+			<integer>50</integer> <!-- Initial key repeat delay (ms) -->
+			<key>KeySubsequentDelay</key>
+			<integer>5</integer> <!-- Subsequent key repeat delay (ms) -->
+			<key>PointerPollMask</key>
+			<integer>-1</integer>
+			<key>PointerPollMax</key>
+			<integer>80</integer>
+			<key>PointerPollMin</key>
+			<integer>10</integer>
+			<key>PointerSpeedDiv</key>
+			<integer>1</integer>
+			<key>PointerSpeedMul</key>
+			<integer>1</integer>
+		</dict>
+		<key>Audio</key>
+		<dict>
+			<key>AudioCodec</key>
+			<integer>0</integer> <!-- Audio codec address, usually 0. Only if AudioSupport is true. -->
+			<key>AudioDevice</key>
+			<string></string> <!-- PciRoot path to audio device. Only if AudioSupport is true. Example: PciRoot(0x0)/Pci(0x1b,0x0) -->
+			<key>AudioOutMask</key>
+			<integer>-1</integer> <!-- Bitmask of output channels. -1 for all. -->
+			<key>AudioSupport</key>
+			<false/> <!-- Enable UEFI audio support. Usually false as AppleALC handles audio in macOS. -->
+			<key>DisconnectHda</key>
+			<false/> <!-- Disconnect HDA controller before handing to macOS. -->
+			<key>MaximumGain</key>
+			<integer>-15</integer> <!-- Maximum gain in dB. -->
+			<key>MinimumAssistGain</key>
+			<integer>-30</integer> <!-- Minimum gain for audio assist in dB. -->
+			<key>MinimumAudibleGain</key>
+			<integer>-55</integer> <!-- Minimum audible gain in dB. -->
+			<key>PlayChime</key>
+			<string>Auto</string> <!-- Valid: Auto, Enabled, Disabled. Play boot chime. -->
+			<key>ResetTrafficClass</key>
+			<false/>
+			<key>SetupDelay</key>
+			<integer>0</integer> <!-- Delay in ms before initializing audio. -->
+		</dict>
+		<key>ConnectDrivers</key>
+		<true/> <!-- Connect all UEFI drivers on startup -->
+		<key>Drivers</key>
+		<array>
+			<!-- DYNAMIC: Your tool should select and enable necessary UEFI Drivers from EFI/OC/Drivers/ -->
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Comment</key>
+				<string>HFS+ Filesystem Driver</string>
+				<key>Enabled</key>
+				<true/>
+				<key>Path</key>
+				<string>HfsPlus.efi</string> <!-- Or VBoxHfs.efi -->
+			</dict>
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Comment</key>
+				<string>OpenRuntime.efi: Essential for OpenCore services.</string>
+				<key>Enabled</key>
+				<true/> <!-- Always required -->
+				<key>Path</key>
+				<string>OpenRuntime.efi</string>
+			</dict>
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Comment</key>
+				<string>OpenCanopy.efi: Graphical Boot Picker.</string>
+				<key>Enabled</key>
+				<true/> <!-- TOOL_GENERATED: Enable if PickerMode=External -->
+				<key>Path</key>
+				<string>OpenCanopy.efi</string>
+			</dict>
+			<!-- Add other drivers like AudioDxe.efi, CrScreenshotDxe.efi, EmuVariableUefi.efi etc. -->
+		</array>
+		<key>Input</key>
+		<dict>
+			<key>KeyFiltering</key>
+			<false/> <!-- Apply key filtering for smoother input -->
+			<key>KeyForgetThreshold</key>
+			<integer>5</integer> <!-- Key press time threshold (ms) -->
+			<key>KeySupport</key>
+			<true/> <!-- Enable keyboard support -->
+			<key>KeySupportMode</key>
+			<string>Auto</string> <!-- Valid: Auto, V1, V2, AMI. 'Auto' for most. -->
+			<key>KeySwap</key>
+			<false/> <!-- Swap Command and Option keys -->
+			<key>PointerSupport</key>
+			<false/> <!-- Enable pointer (mouse/trackpad) support in UEFI. Usually false. -->
+			<key>PointerSupportMode</key>
+			<string>ASUS</string> <!-- Valid: ASUS, OEM, Apple. Only if PointerSupport is true. -->
+			<key>TimerResolution</key>
+			<integer>50000</integer> <!-- Timer resolution in 100ns units (50000 = 5ms) -->
+		</dict>
+		<key>Output</key>
+		<dict>
+			<key>ClearScreenOnModeSwitch</key>
+			<false/> <!-- Clear screen when switching video modes -->
+			<key>ConsoleMode</key>
+			<string></string> <!-- Set specific console mode (e.g., 80x25). Empty for auto. -->
+			<key>DirectGopRendering</key>
+			<false/> <!-- Use direct GOP rendering, can improve performance on some systems -->
+			<key>ForceResolution</key>
+			<false/> <!-- Force specific screen resolution. If true, set Resolution below. -->
+			<key>GopPassThrough</key>
+			<string>Disabled</string> <!-- Valid: Disabled, Apple, Windows, Linux. For GOP compatibility. -->
+			<key>IgnoreTextInGraphics</key>
+			<false/> <!-- Ignore text rendering when in graphics mode -->
+			<key>ProvideConsoleGop</key>
+			<true/> <!-- Ensure ConsoleGOP is available -->
+			<key>ReconnectGraphicsOnConnect</key>
+			<false/>
+			<key>ReconnectOnResChange</key>
+			<false/> <!-- Reconnect display on resolution change -->
+			<key>ReplaceTabWithSpace</key>
+			<false/> <!-- Replace tab characters with spaces in console output -->
+			<key>Resolution</key>
+			<string>Max</string> <!-- USER_INPUT: Screen resolution (e.g., 1920x1080@32). 'Max' for highest available. -->
+			<key>SanitiseClearScreen</key>
+			<false/> <!-- Use UGA standard clear screen, can help with visual glitches -->
+			<key>TextRenderer</key>
+			<string>BuiltinGraphics</string> <!-- Valid: BuiltinGraphics, SystemGraphics, SystemText, SystemGraphicsHorizontal. -->
+			<key>UIScale</key>
+			<integer>-1</integer> <!-- Valid: -1 (Auto), 1 (Normal), 2 (HiDPI). Overrides NVRAM UIScale for picker. -->
+			<key>UgaPassThrough</key>
+			<false/> <!-- Use UGA pass-through for graphics output -->
+		</dict>
+		<key>ProtocolOverrides</key>
+		<dict>
+			<!-- Most should be false unless specific needs -->
+			<key>AppleAudio</key>
+			<false/>
+			<key>AppleBootPolicy</key>
+			<false/>
+			<key>AppleDebugLog</key>
+			<false/>
+			<key>AppleEg2Info</key>
+			<false/>
+			<key>AppleFramebufferInfo</key>
+			<false/>
+			<key>AppleImageConversion</key>
+			<false/>
+			<key>AppleImg4Verification</key>
+			<false/>
+			<key>AppleKeyMap</key>
+			<false/>
+			<key>AppleRtcRam</key>
+			<false/>
+			<key>AppleSecureBoot</key>
+			<false/>
+			<key>AppleSmcIo</key>
+			<true/> <!-- Essential for VirtualSMC.kext -->
+			<key>AppleUserInterfaceTheme</key>
+			<false/>
+			<key>DataHub</key>
+			<false/>
+			<key>DeviceProperties</key>
+			<false/>
+			<key>FirmwareVolume</key>
+			<false/> <!-- Set true if using FileVault 2 on legacy systems -->
+			<key>HashServices</key>
+			<false/> <!-- Set true if using FileVault 2 on legacy systems -->
+			<key>OSInfo</key>
+			<false/>
+			<key>UnicodeCollation</key>
+			<false/> <!-- Usually false, true for older systems needing unicode collation protocol -->
+		</dict>
+		<key>Quirks</key>
+		<dict>
+			<key>ActivateHpetSupport</key>
+			<false/> <!-- Enable HPET support, usually not needed -->
+			<key>DisableSecurityPolicy</key>
+			<false/> <!-- Disable UEFI security policy, for very specific firmware -->
+			<key>EnableVectorAcceleration</key>
+			<true/> <!-- Enable vector acceleration for memory operations -->
+			<key>EnableVmx</key>
+			<false/> <!-- Enable VMX for virtualization if not enabled by firmware -->
+			<key>ExitBootServicesDelay</key>
+			<integer>0</integer> <!-- Delay in ms before exiting boot services -->
+			<key>ForceOcWriteFlash</key>
+			<false/> <!-- Force OpenCore to write variables to flash memory -->
+			<key>ForgeUefiSupport</key>
+			<false/> <!-- For systems with incomplete UEFI implementations -->
+			<key>IgnoreInvalidFlexRatio</key>
+			<false/> <!-- Ignore invalid Flex Ratio if MSR 0x194 is locked -->
+			<key>ReleaseUsbOwnership</key>
+			<true/> <!-- Release USB ownership from firmware to OS. Try false if USB issues. -->
+			<key>ReloadOptionRoms</key>
+			<false/> <!-- Reload PCI Option ROMs -->
+			<key>RequestBootVarRouting</key>
+			<true/> <!-- Required for Startup Disk preference pane to work correctly -->
+			<key>ResizeGpuBars</key>
+			<integer>-1</integer> <!-- Control GPU BAR resizing. -1 default, 0 disable, other values specific sizes. -->
+			<key>TscSyncTimeout</key>
+			<integer>0</integer> <!-- Timeout for TSC synchronization. 0 default. -->
+			<key>UnblockFsConnect</key>
+			<false/> <!-- Allow connecting to all file systems, can help on some Dell/HP systems -->
+		</dict>
+		<key>ReservedMemory</key>
+		<array>
+			<!-- DYNAMIC: Reserve memory regions if they conflict with macOS -->
+			<!-- Example:
+			<dict>
+				<key>Address</key>
+				<integer>268435456</integer> <!- Start address of memory region ->
+				<key>Comment</key>
+				<string>Hardware specific reserved region</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Size</key>
+				<integer>268435456</integer> <!- Size of memory region ->
+				<key>Type</key>
+				<string>Reserved</string>
+			</dict>
+			-->
+		</array>
+	</dict>
+</dict>
+</plist>
